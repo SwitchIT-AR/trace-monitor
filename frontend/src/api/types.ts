@@ -24,6 +24,7 @@ export type Hop = {
   lon: number | null
   city: string | null
   country: string | null
+  asn: string | null
   isPrivate: boolean
 }
 

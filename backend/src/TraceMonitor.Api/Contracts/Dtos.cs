@@ -25,6 +25,7 @@ public record HopDto(
     double? Lon,
     string? City,
     string? Country,
+    string? Asn,
     bool IsPrivate);
 
 public record TraceRunDto(

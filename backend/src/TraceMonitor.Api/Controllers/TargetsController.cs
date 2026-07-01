@@ -135,7 +135,7 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
             geo.TryGetValue(h.Ip ?? "", out var g);
             return new HopDto(
                 h.HopIndex, h.Ip, h.Hostname, h.LossPct, h.Sent, h.Last, h.Avg, h.Best, h.Worst, h.StDev,
-                g?.Lat, g?.Lon, g?.City, g?.Country, g?.IsPrivate ?? h.Ip is null);
+                g?.Lat, g?.Lon, g?.City, g?.Country, g?.Asn, g?.IsPrivate ?? h.Ip is null);
         }).ToList();
 
         return new TraceRunDto(run.Id, run.StartedAtUtc, run.OverallLossPct, run.OverallAvgRttMs, hops);

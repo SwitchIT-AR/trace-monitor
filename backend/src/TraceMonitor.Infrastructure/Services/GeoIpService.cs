@@ -78,7 +78,7 @@ public class GeoIpService(TraceMonitorDbContext db, IHttpClientFactory httpClien
             try
             {
                 var payload = JsonSerializer.Serialize(
-                    chunk.Select(ip => new { query = ip, fields = "status,country,city,lat,lon,isp,org,query" }));
+                    chunk.Select(ip => new { query = ip, fields = "status,country,city,lat,lon,isp,org,as,query" }));
 
                 using var response = await client.PostAsync(
                     "batch", new StringContent(payload, Encoding.UTF8, "application/json"), ct);
@@ -100,6 +100,7 @@ public class GeoIpService(TraceMonitorDbContext db, IHttpClientFactory httpClien
                         Country = item.Country,
                         Isp = item.Isp,
                         Org = item.Org,
+                        Asn = string.IsNullOrWhiteSpace(item.As) ? null : item.As,
                         Lat = item.Status == "success" ? item.Lat : null,
                         Lon = item.Status == "success" ? item.Lon : null,
                     };
@@ -154,6 +155,9 @@ public class GeoIpService(TraceMonitorDbContext db, IHttpClientFactory httpClien
 
         [JsonPropertyName("org")]
         public string? Org { get; set; }
+
+        [JsonPropertyName("as")]
+        public string? As { get; set; }
 
         [JsonPropertyName("lat")]
         public double? Lat { get; set; }
