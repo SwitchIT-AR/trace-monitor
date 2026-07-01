@@ -1,0 +1,14 @@
+# dotnet
+backend/**/bin/
+backend/**/obj/
+*.user
+
+# node / vite
+frontend/node_modules/
+frontend/dist/
+
+# env
+.env
+
+# OS
+.DS_Store

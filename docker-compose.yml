@@ -1,0 +1,41 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-trace_monitor}
+      POSTGRES_USER: ${POSTGRES_USER:-trace_monitor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-trace_monitor}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__TraceMonitor: "Host=postgres;Port=5432;Database=${POSTGRES_DB:-trace_monitor};Username=${POSTGRES_USER:-trace_monitor};Password=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}"
+      Trace__IntervalSeconds: ${TRACE_INTERVAL_SECONDS:-120}
+      Trace__ReportCycles: ${TRACE_REPORT_CYCLES:-10}
+      Cors__AllowedOrigins__0: http://localhost:5173
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-8080}:80"
+
+volumes:
+  postgres_data:
