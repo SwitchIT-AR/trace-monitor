@@ -7,6 +7,15 @@ export type TargetSummary = {
   lastLossPct: number | null
   lastAvgRttMs: number | null
   lastPathChangeAtUtc: string | null
+  verifiedLat: number | null
+  verifiedLon: number | null
+  verifiedAddress: string | null
+}
+
+export type OfficeLocation = {
+  lat: number
+  lon: number
+  address: string
 }
 
 export type Hop = {

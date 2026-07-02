@@ -20,6 +20,7 @@ export default function TargetDetail() {
   const { data: run, error, loading } = usePolling(() => api.getLatestRun(targetId), 15_000)
   const { data: history } = usePolling(() => api.getRunHistory(targetId, RANGE_HOURS[range]), 30_000)
   const { data: events } = usePolling(() => api.getTargetEvents(targetId), 30_000)
+  const { data: office } = usePolling(() => api.getOffice(), 300_000)
 
   const target = targets?.find((t) => t.id === targetId)
 
@@ -69,7 +70,7 @@ export default function TargetDetail() {
         <Text fw={600} mb="sm">
           Mapa de la ruta actual
         </Text>
-        <RouteMap hops={run.hops} />
+        {target && <RouteMap target={target} hops={run.hops} office={office ?? null} />}
       </Paper>
 
       <Paper withBorder p="md">

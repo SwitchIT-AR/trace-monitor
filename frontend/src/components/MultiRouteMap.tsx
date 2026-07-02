@@ -4,7 +4,7 @@ import L from 'leaflet'
 import icon from 'leaflet/dist/images/marker-icon.png'
 import iconShadow from 'leaflet/dist/images/marker-shadow.png'
 import { Center, Text } from '@mantine/core'
-import type { Hop } from '../api/types'
+import type { RoutePoint } from '../utils/routePoints'
 
 L.Icon.Default.mergeOptions({
   iconUrl: icon,
@@ -21,10 +21,8 @@ export type MapRoute = {
   id: number
   name: string
   color: string
-  hops: Hop[]
+  points: RoutePoint[]
 }
-
-type GeoHop = Hop & { lat: number; lon: number }
 
 function FitToPoints({ points }: { points: [number, number][] }) {
   const map = useMap()
@@ -41,20 +39,95 @@ function FitToPoints({ points }: { points: [number, number][] }) {
   return null
 }
 
-export default function MultiRouteMap({ routes, height = 400 }: { routes: MapRoute[]; height?: number }) {
-  const geoRoutes = useMemo(
-    () =>
-      routes.map((r) => ({
-        ...r,
-        points: r.hops.filter((h): h is GeoHop => h.lat !== null && h.lon !== null),
-      })),
+function hopIcon(color: string) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:12px;height:12px;border-radius:50%;background:${color};border:2px solid #1a1b1e;box-shadow:0 0 0 1px ${color}"></div>`,
+    iconSize: [12, 12],
+    iconAnchor: [6, 6],
+  })
+}
+
+function verifiedIcon(color: string) {
+  return L.divIcon({
+    className: '',
+    html: `<div style="width:16px;height:16px;border-radius:3px;background:${color};border:2px solid white;transform:rotate(45deg);box-shadow:0 0 0 1px ${color}"></div>`,
+    iconSize: [16, 16],
+    iconAnchor: [8, 8],
+  })
+}
+
+const OFFICE_ICON = L.divIcon({
+  className: '',
+  html: `<div style="width:16px;height:16px;border-radius:50%;background:#e9ecef;border:3px solid #1a1b1e;box-shadow:0 0 0 1.5px #e9ecef"></div>`,
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+})
+
+function PointPopup({ routeName, point }: { routeName: string; point: RoutePoint }) {
+  if (point.kind === 'office') {
+    return (
+      <Popup>
+        <strong>Oficina</strong>
+        <br />
+        {point.city}
+      </Popup>
+    )
+  }
+
+  if (point.kind === 'verified') {
+    return (
+      <Popup>
+        <strong>{point.label} — dirección verificada</strong>
+        <br />
+        {point.city}
+        <br />
+        <em>Según dato real provisto, no por geolocalización de IP.</em>
+      </Popup>
+    )
+  }
+
+  return (
+    <Popup>
+      <strong>
+        {routeName} — #{point.hopIndex} {point.hostname ?? point.ip}
+      </strong>
+      <br />
+      {point.ip}
+      <br />
+      {point.city ? `${point.city}, ` : ''}
+      {point.country}
+      {point.asn && (
+        <>
+          <br />
+          {point.asn}
+        </>
+      )}
+    </Popup>
+  )
+}
+
+export default function MultiRouteMap({
+  routes,
+  height = 400,
+}: {
+  routes: MapRoute[]
+  height?: number | string
+}) {
+  const allPoints = useMemo(
+    () => routes.flatMap((r) => r.points.map((p) => [p.lat, p.lon] as [number, number])),
     [routes],
   )
 
-  const allPoints = useMemo(
-    () => geoRoutes.flatMap((r) => r.points.map((p) => [p.lat, p.lon] as [number, number])),
-    [geoRoutes],
-  )
+  const officePoints = useMemo(() => {
+    const seen = new Map<string, RoutePoint>()
+    for (const route of routes) {
+      for (const p of route.points) {
+        if (p.kind === 'office') seen.set(`${p.lat},${p.lon}`, p)
+      }
+    }
+    return [...seen.values()]
+  }, [routes])
 
   if (allPoints.length === 0) {
     return (
@@ -68,38 +141,27 @@ export default function MultiRouteMap({ routes, height = 400 }: { routes: MapRou
     <MapContainer center={allPoints[0]} zoom={4} style={{ height, borderRadius: 8, background: '#1a1b1e' }}>
       <TileLayer attribution={DARK_TILE_ATTRIBUTION} url={DARK_TILE_URL} />
       <FitToPoints points={allPoints} />
-      {geoRoutes.map((route) => (
+
+      {officePoints.map((p) => (
+        <Marker key={`office-${p.lat}-${p.lon}`} position={[p.lat, p.lon]} icon={OFFICE_ICON}>
+          <PointPopup routeName="" point={p} />
+        </Marker>
+      ))}
+
+      {routes.map((route) => (
         <Fragment key={route.id}>
           <Polyline positions={route.points.map((p) => [p.lat, p.lon])} color={route.color} weight={3} />
-          {route.points.map((p) => (
-            <Marker
-              key={`${route.id}-${p.hopIndex}`}
-              position={[p.lat, p.lon]}
-              icon={L.divIcon({
-                className: '',
-                html: `<div style="width:12px;height:12px;border-radius:50%;background:${route.color};border:2px solid #1a1b1e;box-shadow:0 0 0 1px ${route.color}"></div>`,
-                iconSize: [12, 12],
-                iconAnchor: [6, 6],
-              })}
-            >
-              <Popup>
-                <strong>
-                  {route.name} — #{p.hopIndex} {p.hostname ?? p.ip}
-                </strong>
-                <br />
-                {p.ip}
-                <br />
-                {p.city ? `${p.city}, ` : ''}
-                {p.country}
-                {p.asn && (
-                  <>
-                    <br />
-                    {p.asn}
-                  </>
-                )}
-              </Popup>
-            </Marker>
-          ))}
+          {route.points
+            .filter((p) => p.kind !== 'office')
+            .map((p) => (
+              <Marker
+                key={`${route.id}-${p.kind}-${p.hopIndex ?? p.label}`}
+                position={[p.lat, p.lon]}
+                icon={p.kind === 'verified' ? verifiedIcon(route.color) : hopIcon(route.color)}
+              >
+                <PointPopup routeName={route.name} point={p} />
+              </Marker>
+            ))}
         </Fragment>
       ))}
     </MapContainer>

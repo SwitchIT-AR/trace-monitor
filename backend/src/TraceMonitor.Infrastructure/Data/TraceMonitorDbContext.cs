@@ -42,10 +42,34 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
         });
 
         modelBuilder.Entity<Target>().HasData(
-            new Target { Id = 1, Name = "Griveo", Provider = "Telecentro", DestinationHost = "186.19.218.8", IsActive = true, CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Target { Id = 2, Name = "Vaclog", Provider = "IPLAN", DestinationHost = "190.210.245.120", IsActive = true, CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Target { Id = 3, Name = "Managio (DC)", Provider = "Telecentro", DestinationHost = "186.23.255.158", IsActive = true, CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc) },
-            new Target { Id = 4, Name = "Vaclog (DC)", Provider = "Telecentro", DestinationHost = "186.23.255.156", IsActive = true, CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc) }
+            new Target
+            {
+                Id = 1, Name = "Griveo", Provider = "Telecentro", DestinationHost = "186.19.218.8", IsActive = true,
+                CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+                VerifiedLat = -34.5816366, VerifiedLon = -58.4992073,
+                VerifiedAddress = "Gral. José G. Artigas 4901, Villa Pueyrredón, CABA (Farmacia Nueva Social Fenix, suc. Griveo)",
+            },
+            new Target
+            {
+                Id = 2, Name = "Vaclog", Provider = "IPLAN", DestinationHost = "190.210.245.120", IsActive = true,
+                CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+                VerifiedLat = -34.6038067, VerifiedLon = -58.3842268,
+                VerifiedAddress = "Av. Corrientes y 25 de Mayo, San Nicolás, CABA (aprox.)",
+            },
+            new Target
+            {
+                Id = 3, Name = "Managio (DC)", Provider = "Telecentro", DestinationHost = "186.23.255.158", IsActive = true,
+                CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+                VerifiedLat = -34.6712543, VerifiedLon = -58.5375181,
+                VerifiedAddress = "Cnel. Pringles 3407, Lomas del Mirador, La Matanza (Datacenter Telecentro)",
+            },
+            new Target
+            {
+                Id = 4, Name = "Vaclog (DC)", Provider = "Telecentro", DestinationHost = "186.23.255.156", IsActive = true,
+                CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+                VerifiedLat = -34.6712543, VerifiedLon = -58.5375181,
+                VerifiedAddress = "Cnel. Pringles 3407, Lomas del Mirador, La Matanza (Datacenter Telecentro)",
+            }
         );
     }
 }

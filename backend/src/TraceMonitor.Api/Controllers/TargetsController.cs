@@ -37,7 +37,10 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
                 lastRun?.StartedAtUtc,
                 lastRun?.OverallLossPct,
                 lastRun?.OverallAvgRttMs,
-                lastEvent?.DetectedAtUtc));
+                lastEvent?.DetectedAtUtc,
+                target.VerifiedLat,
+                target.VerifiedLon,
+                target.VerifiedAddress));
         }
 
         return result;
@@ -60,7 +63,7 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
         db.Targets.Add(target);
         await db.SaveChangesAsync(ct);
 
-        return new TargetSummaryDto(target.Id, target.Name, target.Provider, target.DestinationHost, null, null, null, null);
+        return new TargetSummaryDto(target.Id, target.Name, target.Provider, target.DestinationHost, null, null, null, null, target.VerifiedLat, target.VerifiedLon, target.VerifiedAddress);
     }
 
     [HttpDelete("{id:int}")]

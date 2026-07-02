@@ -1,8 +1,10 @@
-import { Alert, Center, Loader, SimpleGrid, Stack, Title } from '@mantine/core'
+import { Alert, Center, Loader } from '@mantine/core'
 import { api } from '../api/client'
 import { usePolling } from '../hooks/usePolling'
 import TargetCard from '../components/TargetCard'
 import OverviewMap from '../components/OverviewMap'
+
+const SIDEBAR_WIDTH = 300
 
 export default function Dashboard() {
   const { data: targets, error, loading } = usePolling(() => api.getTargets(), 30_000)
@@ -20,19 +22,17 @@ export default function Dashboard() {
   }
 
   return (
-    <Stack gap="lg">
-      <OverviewMap targets={targets ?? []} />
-
-      <div>
-        <Title order={3} mb="md">
-          Destinos monitoreados
-        </Title>
-        <SimpleGrid cols={{ base: 1, sm: 2, lg: 4 }}>
-          {targets?.map((t) => (
-            <TargetCard key={t.id} target={t} />
-          ))}
-        </SimpleGrid>
+    <div style={{ display: 'flex', gap: 16, height: 'calc(100vh - 92px)' }}>
+      <div style={{ width: SIDEBAR_WIDTH, flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {targets?.map((t) => (
+          <div key={t.id} style={{ flex: 1, minHeight: 0 }}>
+            <TargetCard target={t} />
+          </div>
+        ))}
       </div>
-    </Stack>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <OverviewMap targets={targets ?? []} />
+      </div>
+    </div>
   )
 }

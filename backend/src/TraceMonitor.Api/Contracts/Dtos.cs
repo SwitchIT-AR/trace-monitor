@@ -8,7 +8,12 @@ public record TargetSummaryDto(
     DateTime? LastRunAtUtc,
     double? LastLossPct,
     double? LastAvgRttMs,
-    DateTime? LastPathChangeAtUtc);
+    DateTime? LastPathChangeAtUtc,
+    double? VerifiedLat,
+    double? VerifiedLon,
+    string? VerifiedAddress);
+
+public record OfficeLocationDto(double Lat, double Lon, string Address);
 
 public record HopDto(
     int HopIndex,

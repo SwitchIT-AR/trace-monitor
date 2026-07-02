@@ -1,4 +1,4 @@
-import type { PathChangeEvent, RunHistoryPoint, TargetSummary, TraceRun } from './types'
+import type { OfficeLocation, PathChangeEvent, RunHistoryPoint, TargetSummary, TraceRun } from './types'
 
 const API_BASE = '/api'
 
@@ -17,4 +17,5 @@ export const api = {
   },
   getTargetEvents: (targetId: number) => getJson<PathChangeEvent[]>(`/targets/${targetId}/events`),
   getAllEvents: () => getJson<PathChangeEvent[]>('/events'),
+  getOffice: () => getJson<OfficeLocation>('/office'),
 }

@@ -18,10 +18,11 @@ export default function TargetCard({ target }: { target: TargetSummary }) {
       withBorder
       shadow="sm"
       padding="lg"
+      h="100%"
       style={{ cursor: 'pointer' }}
       onClick={() => navigate(`/targets/${target.id}`)}
     >
-      <Stack gap="xs">
+      <Stack gap="xs" justify="center" h="100%">
         <Group justify="space-between">
           <Text fw={600}>{target.name}</Text>
           <Badge variant="light">{target.provider}</Badge>

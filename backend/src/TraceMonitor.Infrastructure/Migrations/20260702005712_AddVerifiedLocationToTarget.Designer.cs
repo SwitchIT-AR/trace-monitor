@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TraceMonitor.Infrastructure.Data;
@@ -11,9 +12,11 @@ using TraceMonitor.Infrastructure.Data;
 namespace TraceMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(TraceMonitorDbContext))]
-    partial class TraceMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702005712_AddVerifiedLocationToTarget")]
+    partial class AddVerifiedLocationToTarget
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
