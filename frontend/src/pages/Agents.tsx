@@ -1,0 +1,263 @@
+import { useState } from 'react'
+import {
+  ActionIcon,
+  Alert,
+  Badge,
+  Button,
+  Center,
+  CopyButton,
+  Group,
+  Loader,
+  Modal,
+  Paper,
+  Stack,
+  Table,
+  Text,
+  TextInput,
+  Title,
+  Tooltip,
+} from '@mantine/core'
+import { IconCheck, IconCopy, IconPlus, IconServer2, IconTrash } from '@tabler/icons-react'
+import { notifications } from '@mantine/notifications'
+import { api } from '../api/client'
+import { usePolling } from '../hooks/usePolling'
+import type { Agent, AgentCreated } from '../api/types'
+import { formatDateTime, formatRelativeTime } from '../utils/format'
+
+const STALE_MINUTES = 10
+
+function AgentStatusBadge({ agent }: { agent: Agent }) {
+  if (!agent.isActive) return <Badge color="gray">inactivo</Badge>
+
+  if (!agent.lastSeenAtUtc) {
+    return (
+      <Badge color="gray" variant="light">
+        sin datos aun
+      </Badge>
+    )
+  }
+
+  const staleMs = Date.now() - new Date(agent.lastSeenAtUtc + 'Z').getTime()
+  if (staleMs > STALE_MINUTES * 60_000) {
+    return <Badge color="orange">sin novedades</Badge>
+  }
+  return <Badge color="teal">en linea</Badge>
+}
+
+function NewAgentModal({
+  opened,
+  onClose,
+  onCreated,
+}: {
+  opened: boolean
+  onClose: () => void
+  onCreated: () => void
+}) {
+  const [name, setName] = useState('')
+  const [location, setLocation] = useState('')
+  const [provider, setProvider] = useState('')
+  const [submitting, setSubmitting] = useState(false)
+  const [created, setCreated] = useState<AgentCreated | null>(null)
+
+  const handleClose = () => {
+    setName('')
+    setLocation('')
+    setProvider('')
+    setCreated(null)
+    onClose()
+  }
+
+  const handleSubmit = async () => {
+    if (!name.trim() || !location.trim() || !provider.trim()) return
+    setSubmitting(true)
+    try {
+      const result = await api.createAgent({ name, location, provider })
+      setCreated(result)
+      onCreated()
+    } catch (err) {
+      notifications.show({ color: 'red', title: 'No se pudo crear el agente', message: (err as Error).message })
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <Modal opened={opened} onClose={handleClose} title={created ? 'Agente creado' : 'Nuevo agente'} centered>
+      {created ? (
+        <Stack>
+          <Alert color="yellow" title="Guarda esta clave ahora">
+            No se vuelve a mostrar. Es el valor de <code>AGENT_API_KEY</code> en el <code>.env</code> del agente
+            remoto.
+          </Alert>
+          <Group gap="xs" wrap="nowrap">
+            <TextInput value={created.apiKey} readOnly flex={1} styles={{ input: { fontFamily: 'monospace' } }} />
+            <CopyButton value={created.apiKey}>
+              {({ copied, copy }) => (
+                <Tooltip label={copied ? 'Copiada' : 'Copiar'}>
+                  <ActionIcon variant="light" onClick={copy} color={copied ? 'teal' : undefined}>
+                    {copied ? <IconCheck size={16} /> : <IconCopy size={16} />}
+                  </ActionIcon>
+                </Tooltip>
+              )}
+            </CopyButton>
+          </Group>
+          <Button onClick={handleClose}>Listo</Button>
+        </Stack>
+      ) : (
+        <Stack>
+          <TextInput
+            label="Nombre"
+            placeholder="Sucursal X"
+            value={name}
+            onChange={(e) => setName(e.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Ubicacion"
+            placeholder="Ciudad, Provincia"
+            value={location}
+            onChange={(e) => setLocation(e.currentTarget.value)}
+            required
+          />
+          <TextInput
+            label="Proveedor (ISP)"
+            placeholder="Fibertel"
+            value={provider}
+            onChange={(e) => setProvider(e.currentTarget.value)}
+            required
+          />
+          <Button
+            onClick={handleSubmit}
+            loading={submitting}
+            disabled={!name.trim() || !location.trim() || !provider.trim()}
+          >
+            Crear
+          </Button>
+        </Stack>
+      )}
+    </Modal>
+  )
+}
+
+export default function Agents() {
+  const { data: agents, error, loading, refetch } = usePolling(() => api.getAgents(), 15_000)
+  const [modalOpen, setModalOpen] = useState(false)
+  const [deactivatingId, setDeactivatingId] = useState<number | null>(null)
+
+  const handleDeactivate = async (agent: Agent) => {
+    if (!window.confirm(`Desactivar el agente "${agent.name}"? Va a dejar de poder reportar trazas.`)) return
+
+    setDeactivatingId(agent.id)
+    try {
+      await api.deactivateAgent(agent.id)
+      await refetch()
+    } catch (err) {
+      notifications.show({ color: 'red', title: 'No se pudo desactivar', message: (err as Error).message })
+    } finally {
+      setDeactivatingId(null)
+    }
+  }
+
+  if (loading) {
+    return (
+      <Center h={200}>
+        <Loader />
+      </Center>
+    )
+  }
+
+  if (error) {
+    return (
+      <Alert color="red" title="No se pudo cargar los agentes">
+        {error.message}
+      </Alert>
+    )
+  }
+
+  return (
+    <Stack gap="lg">
+      <Group justify="space-between">
+        <div>
+          <Title order={3}>Agentes</Title>
+          <Text c="dimmed" size="sm">
+            Sondas que corren mtr desde distintas ubicaciones/ISPs y reportan al backend central.
+          </Text>
+        </div>
+        <Button leftSection={<IconPlus size={16} />} onClick={() => setModalOpen(true)}>
+          Nuevo agente
+        </Button>
+      </Group>
+
+      <Paper withBorder p="md">
+        <Table verticalSpacing="sm" highlightOnHover>
+          <Table.Thead>
+            <Table.Tr>
+              <Table.Th>Nombre</Table.Th>
+              <Table.Th>Ubicacion</Table.Th>
+              <Table.Th>Proveedor</Table.Th>
+              <Table.Th>Estado</Table.Th>
+              <Table.Th>Ultima vez visto</Table.Th>
+              <Table.Th>Creado</Table.Th>
+              <Table.Th />
+            </Table.Tr>
+          </Table.Thead>
+          <Table.Tbody>
+            {agents?.map((agent) => (
+              <Table.Tr key={agent.id}>
+                <Table.Td>
+                  <Group gap={6}>
+                    <IconServer2 size={16} opacity={0.6} />
+                    <Text fw={600}>{agent.name}</Text>
+                    {agent.isBuiltIn && (
+                      <Badge size="xs" variant="light">
+                        oficina
+                      </Badge>
+                    )}
+                  </Group>
+                </Table.Td>
+                <Table.Td>{agent.location}</Table.Td>
+                <Table.Td>
+                  <Badge variant="light">{agent.provider}</Badge>
+                </Table.Td>
+                <Table.Td>
+                  <AgentStatusBadge agent={agent} />
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {formatRelativeTime(agent.lastSeenAtUtc)}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  <Text size="sm" c="dimmed">
+                    {formatDateTime(agent.createdAtUtc)}
+                  </Text>
+                </Table.Td>
+                <Table.Td>
+                  {!agent.isBuiltIn && (
+                    <Tooltip label="Desactivar">
+                      <ActionIcon
+                        variant="subtle"
+                        color="red"
+                        loading={deactivatingId === agent.id}
+                        onClick={() => handleDeactivate(agent)}
+                      >
+                        <IconTrash size={16} />
+                      </ActionIcon>
+                    </Tooltip>
+                  )}
+                </Table.Td>
+              </Table.Tr>
+            ))}
+          </Table.Tbody>
+        </Table>
+        {agents?.length === 0 && (
+          <Text c="dimmed" size="sm" ta="center" py="lg">
+            Todavia no hay agentes dados de alta.
+          </Text>
+        )}
+      </Paper>
+
+      <NewAgentModal opened={modalOpen} onClose={() => setModalOpen(false)} onCreated={refetch} />
+    </Stack>
+  )
+}

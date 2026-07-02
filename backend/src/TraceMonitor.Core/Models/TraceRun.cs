@@ -6,6 +6,9 @@ public class TraceRun
     public int TargetId { get; set; }
     public Target? Target { get; set; }
 
+    public int AgentId { get; set; }
+    public Agent? Agent { get; set; }
+
     public DateTime StartedAtUtc { get; set; }
     public int PacketsSent { get; set; }
     public int HopCount { get; set; }

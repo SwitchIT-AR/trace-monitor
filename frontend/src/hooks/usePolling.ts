@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 30_000) {
   const [data, setData] = useState<T | null>(null)
@@ -6,6 +6,18 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 30_000) {
   const [loading, setLoading] = useState(true)
   const fetcherRef = useRef(fetcher)
   fetcherRef.current = fetcher
+
+  const refetch = useCallback(async () => {
+    try {
+      const result = await fetcherRef.current()
+      setData(result)
+      setError(null)
+    } catch (err) {
+      setError(err as Error)
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -32,5 +44,5 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 30_000) {
     }
   }, [intervalMs])
 
-  return { data, error, loading }
+  return { data, error, loading, refetch }
 }

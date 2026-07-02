@@ -1,0 +1,14 @@
+services:
+  agent:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.agent
+    restart: unless-stopped
+    cap_add:
+      - NET_RAW
+      - NET_ADMIN
+    environment:
+      CentralApi__BaseUrl: ${CENTRAL_API_BASE_URL:?CENTRAL_API_BASE_URL is required}
+      CentralApi__ApiKey: ${AGENT_API_KEY:?AGENT_API_KEY is required}
+      Trace__IntervalSeconds: ${TRACE_INTERVAL_SECONDS:-120}
+      Trace__ReportCycles: ${TRACE_REPORT_CYCLES:-10}

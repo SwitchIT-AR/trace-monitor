@@ -3,14 +3,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using TraceMonitor.Core.Services;
 
-namespace TraceMonitor.Infrastructure.Services;
+namespace TraceMonitor.Core.Services;
 
 /// <summary>
 /// Runs `mtr` in short report bursts (not a long-lived interactive session) and parses its
 /// JSON output into a clean snapshot. Each call is a self-contained process invocation, so a
-/// container restart never leaves a stuck mtr process behind.
+/// container restart never leaves a stuck mtr process behind. Lives in Core (no DB/EF
+/// dependency) so it can be reused as-is by the standalone TraceMonitor.Agent executable.
 /// </summary>
 public partial class MtrRunner(ILogger<MtrRunner> logger) : IMtrRunner
 {

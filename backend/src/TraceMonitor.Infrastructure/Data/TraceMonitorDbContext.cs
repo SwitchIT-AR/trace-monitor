@@ -6,10 +6,14 @@ namespace TraceMonitor.Infrastructure.Data;
 public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> options) : DbContext(options)
 {
     public DbSet<Target> Targets => Set<Target>();
+    public DbSet<Agent> Agents => Set<Agent>();
     public DbSet<TraceRun> TraceRuns => Set<TraceRun>();
     public DbSet<TraceHop> TraceHops => Set<TraceHop>();
     public DbSet<PathChangeEvent> PathChangeEvents => Set<PathChangeEvent>();
     public DbSet<IpGeoCache> IpGeoCache => Set<IpGeoCache>();
+
+    /// <summary>Id of the seeded built-in agent that represents the office origin, fed in-process by TraceSchedulerWorker.</summary>
+    public const int BuiltInAgentId = 1;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -18,10 +22,16 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
             e.HasIndex(t => t.DestinationHost).IsUnique();
         });
 
+        modelBuilder.Entity<Agent>(e =>
+        {
+            e.HasIndex(a => a.ApiKeyHash).IsUnique();
+        });
+
         modelBuilder.Entity<TraceRun>(e =>
         {
-            e.HasIndex(r => new { r.TargetId, r.StartedAtUtc });
+            e.HasIndex(r => new { r.TargetId, r.AgentId, r.StartedAtUtc });
             e.HasOne(r => r.Target).WithMany(t => t.Runs).HasForeignKey(r => r.TargetId);
+            e.HasOne(r => r.Agent).WithMany(a => a.Runs).HasForeignKey(r => r.AgentId);
         });
 
         modelBuilder.Entity<TraceHop>(e =>
@@ -32,14 +42,29 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
 
         modelBuilder.Entity<PathChangeEvent>(e =>
         {
-            e.HasIndex(ev => new { ev.TargetId, ev.DetectedAtUtc });
+            e.HasIndex(ev => new { ev.TargetId, ev.AgentId, ev.DetectedAtUtc });
             e.HasOne(ev => ev.Target).WithMany(t => t.Events).HasForeignKey(ev => ev.TargetId);
+            e.HasOne(ev => ev.Agent).WithMany(a => a.Events).HasForeignKey(ev => ev.AgentId);
         });
 
         modelBuilder.Entity<IpGeoCache>(e =>
         {
             e.HasKey(g => g.Ip);
         });
+
+        // Lat/Lon/Address are intentionally left null here — Program.cs fills them in at startup
+        // from the (untracked) Office:* config, same source as OfficeController, so the real
+        // coordinates never end up baked into a migration file.
+        modelBuilder.Entity<Agent>().HasData(
+            new Agent
+            {
+                Id = BuiltInAgentId, Name = "Oficina", Location = "Oficina", Provider = "Oficina",
+                // Built-in agent is fed in-process (TraceSchedulerWorker), never authenticates over HTTP — this hash matches no real key.
+                ApiKeyHash = "builtin-no-auth",
+                IsActive = true, IsBuiltIn = true,
+                CreatedAtUtc = new DateTime(2026, 7, 1, 0, 0, 0, DateTimeKind.Utc),
+            }
+        );
 
         modelBuilder.Entity<Target>().HasData(
             new Target

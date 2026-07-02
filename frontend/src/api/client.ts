@@ -1,4 +1,13 @@
-import type { OfficeLocation, PathChangeEvent, RunHistoryPoint, TargetSummary, TraceRun } from './types'
+import type {
+  Agent,
+  AgentCreated,
+  CreateAgentRequest,
+  OfficeLocation,
+  PathChangeEvent,
+  RunHistoryPoint,
+  TargetSummary,
+  TraceRun,
+} from './types'
 
 const API_BASE = '/api'
 
@@ -6,6 +15,21 @@ async function getJson<T>(path: string): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`)
   if (!res.ok) throw new Error(`GET ${path} -> ${res.status}`)
   return res.json() as Promise<T>
+}
+
+async function postJson<T>(path: string, body: unknown): Promise<T> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`POST ${path} -> ${res.status}`)
+  return res.json() as Promise<T>
+}
+
+async function del(path: string): Promise<void> {
+  const res = await fetch(`${API_BASE}${path}`, { method: 'DELETE' })
+  if (!res.ok) throw new Error(`DELETE ${path} -> ${res.status}`)
 }
 
 export const api = {
@@ -18,4 +42,7 @@ export const api = {
   getTargetEvents: (targetId: number) => getJson<PathChangeEvent[]>(`/targets/${targetId}/events`),
   getAllEvents: () => getJson<PathChangeEvent[]>('/events'),
   getOffice: () => getJson<OfficeLocation>('/office'),
+  getAgents: () => getJson<Agent[]>('/agents'),
+  createAgent: (request: CreateAgentRequest) => postJson<AgentCreated>('/agents', request),
+  deactivateAgent: (id: number) => del(`/agents/${id}`),
 }

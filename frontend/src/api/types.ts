@@ -62,3 +62,30 @@ export type PathChangeEvent = {
 }
 
 export type HopSnapshot = { hopIndex: number; ip: string | null; hostname: string | null }
+
+export type Agent = {
+  id: number
+  name: string
+  location: string
+  provider: string
+  isActive: boolean
+  isBuiltIn: boolean
+  createdAtUtc: string
+  lastSeenAtUtc: string | null
+  lat: number | null
+  lon: number | null
+  address: string | null
+}
+
+// Returned only once, right when a new agent is created — the API never exposes the key again.
+export type AgentCreated = {
+  id: number
+  name: string
+  apiKey: string
+}
+
+export type CreateAgentRequest = {
+  name: string
+  location: string
+  provider: string
+}

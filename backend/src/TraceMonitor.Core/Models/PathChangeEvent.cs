@@ -6,6 +6,9 @@ public class PathChangeEvent
     public int TargetId { get; set; }
     public Target? Target { get; set; }
 
+    public int AgentId { get; set; }
+    public Agent? Agent { get; set; }
+
     public DateTime DetectedAtUtc { get; set; }
 
     /// <summary>JSON snapshot of the previous run's hops (ip/hostname per hop index).</summary>

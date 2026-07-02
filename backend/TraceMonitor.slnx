@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/src/">
+    <Project Path="src/TraceMonitor.Agent/TraceMonitor.Agent.csproj" />
     <Project Path="src/TraceMonitor.Api/TraceMonitor.Api.csproj" />
     <Project Path="src/TraceMonitor.Core/TraceMonitor.Core.csproj" />
     <Project Path="src/TraceMonitor.Infrastructure/TraceMonitor.Infrastructure.csproj" />

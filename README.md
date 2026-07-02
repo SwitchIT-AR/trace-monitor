@@ -67,6 +67,42 @@ npm run dev
 El dev server de Vite proxya `/api` hacia `http://localhost:8080` (configurable
 con `VITE_API_PROXY_TARGET`).
 
+## Agentes remotos
+
+Además del monitoreo desde la oficina (que corre en el mismo proceso del backend, como agente
+built-in "Oficina"), se pueden sumar **agentes en otras sedes/ISPs** que traza los mismos
+`Target`s y reportan sus corridas al backend central por HTTP — mismo patrón "el agente llama
+hacia afuera" que el runner de deploy, así no hace falta abrir nada entrante en la sede remota.
+
+1. Dar de alta el agente en el backend central (guarda solo el hash de la clave — copiarla, no se
+   vuelve a mostrar):
+
+   ```bash
+   curl -X POST https://<host-central>/api/agents \
+     -H "Content-Type: application/json" \
+     -d '{"name":"Sucursal X","location":"Ciudad, Provincia","provider":"ISP local"}'
+   ```
+
+2. En la sede remota:
+
+   ```bash
+   git clone https://github.com/SwitchIT-AR/trace-monitor.git /opt/trace-monitor-agent
+   cd /opt/trace-monitor-agent
+   cp .env.agent.example .env   # completar CENTRAL_API_BASE_URL y AGENT_API_KEY
+   docker compose -f docker-compose.agent.yml up -d --build
+   ```
+
+   El agente necesita sockets ICMP raw igual que el backend (`cap_add: NET_RAW, NET_ADMIN`); si
+   la sede es un CT unprivileged de Proxmox, aplica la misma nota de `nesting=1,keyctl=1` de más
+   arriba.
+
+3. Verificar en `GET /api/agents` que el agente aparece y que `lastSeenAtUtc` se actualiza cada
+   ciclo.
+
+Los cambios de ruta se detectan por separado para cada par (target, agente): dos agentes en
+ubicaciones distintas pueden ver rutas distintas y estables hacia el mismo destino sin que eso
+se marque como un cambio.
+
 ## Deploy automático (GitHub Actions)
 
 El CT está en la LAN de la oficina (`10.0.93.113`), sin IP pública — un

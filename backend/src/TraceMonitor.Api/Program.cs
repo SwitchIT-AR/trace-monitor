@@ -25,6 +25,19 @@ using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<TraceMonitorDbContext>();
     db.Database.Migrate();
+
+    // The built-in "Oficina" agent's coordinates live only in the (untracked) Office:* config —
+    // same source as OfficeController — never in a migration, so real coordinates never end up
+    // committed to source control.
+    var builtInAgent = db.Agents.Find(TraceMonitorDbContext.BuiltInAgentId);
+    if (builtInAgent is not null)
+    {
+        var office = app.Configuration.GetSection("Office");
+        builtInAgent.Lat = office.GetValue<double?>("Lat");
+        builtInAgent.Lon = office.GetValue<double?>("Lon");
+        builtInAgent.Address = office.GetValue<string>("Address");
+        db.SaveChanges();
+    }
 }
 
 if (app.Environment.IsDevelopment())
