@@ -90,7 +90,10 @@ export type CreateAgentRequest = {
   provider: string
 }
 
-export type UpdateAgentLocationRequest = {
+export type UpdateAgentRequest = {
+  name: string
+  location: string
+  provider: string
   lat: number | null
   lon: number | null
   address: string | null

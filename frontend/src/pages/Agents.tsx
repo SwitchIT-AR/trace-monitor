@@ -18,7 +18,7 @@ import {
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconCheck, IconCopy, IconMapPin, IconMapPinOff, IconPlus, IconServer2, IconTrash } from '@tabler/icons-react'
+import { IconCheck, IconCopy, IconMapPinOff, IconPencil, IconPlus, IconServer2, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { api } from '../api/client'
 import { usePolling } from '../hooks/usePolling'
@@ -144,7 +144,7 @@ function NewAgentModal({
   )
 }
 
-function EditLocationModal({
+function EditAgentModal({
   agent,
   onClose,
   onSaved,
@@ -153,22 +153,31 @@ function EditLocationModal({
   onClose: () => void
   onSaved: () => void
 }) {
+  const [name, setName] = useState('')
+  const [location, setLocation] = useState('')
+  const [provider, setProvider] = useState('')
   const [lat, setLat] = useState<number | string>('')
   const [lon, setLon] = useState<number | string>('')
   const [address, setAddress] = useState('')
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
+    setName(agent?.name ?? '')
+    setLocation(agent?.location ?? '')
+    setProvider(agent?.provider ?? '')
     setLat(agent?.lat ?? '')
     setLon(agent?.lon ?? '')
     setAddress(agent?.address ?? '')
   }, [agent])
 
   const handleSubmit = async () => {
-    if (!agent) return
+    if (!agent || !name.trim() || !location.trim() || !provider.trim()) return
     setSubmitting(true)
     try {
-      await api.updateAgentLocation(agent.id, {
+      await api.updateAgent(agent.id, {
+        name,
+        location,
+        provider,
         lat: lat === '' ? null : Number(lat),
         lon: lon === '' ? null : Number(lon),
         address: address.trim() || null,
@@ -176,18 +185,31 @@ function EditLocationModal({
       onSaved()
       onClose()
     } catch (err) {
-      notifications.show({ color: 'red', title: 'No se pudo actualizar la ubicacion', message: (err as Error).message })
+      notifications.show({ color: 'red', title: 'No se pudo actualizar el agente', message: (err as Error).message })
     } finally {
       setSubmitting(false)
     }
   }
 
   return (
-    <Modal opened={agent !== null} onClose={onClose} title={`Ubicacion de ${agent?.name ?? ''}`} centered>
+    <Modal opened={agent !== null} onClose={onClose} title={`Editar ${agent?.name ?? ''}`} centered>
       <Stack>
-        <Text size="sm" c="dimmed">
-          Marca el origen de este agente en el mapa de rutas. Se completa sola con la IP del
-          primer reporte; dejala vacia y guarda para sacar el marcador.
+        <TextInput label="Nombre" value={name} onChange={(e) => setName(e.currentTarget.value)} required />
+        <TextInput
+          label="Ubicacion"
+          value={location}
+          onChange={(e) => setLocation(e.currentTarget.value)}
+          required
+        />
+        <TextInput
+          label="Proveedor (ISP)"
+          value={provider}
+          onChange={(e) => setProvider(e.currentTarget.value)}
+          required
+        />
+        <Text size="sm" c="dimmed" mt="xs">
+          Coordenadas de origen en el mapa de rutas. Se completan solas con la IP del primer
+          reporte; dejalas vacias y guarda para sacar el marcador.
         </Text>
         <NumberInput label="Latitud" placeholder="-34.6037" value={lat} onChange={setLat} decimalScale={6} />
         <NumberInput label="Longitud" placeholder="-58.3816" value={lon} onChange={setLon} decimalScale={6} />
@@ -197,7 +219,11 @@ function EditLocationModal({
           value={address}
           onChange={(e) => setAddress(e.currentTarget.value)}
         />
-        <Button onClick={handleSubmit} loading={submitting}>
+        <Button
+          onClick={handleSubmit}
+          loading={submitting}
+          disabled={!name.trim() || !location.trim() || !provider.trim()}
+        >
           Guardar
         </Button>
       </Stack>
@@ -207,12 +233,12 @@ function EditLocationModal({
 
 function AgentCard({
   agent,
-  onEditLocation,
+  onEdit,
   onDeactivate,
   deactivating,
 }: {
   agent: Agent
-  onEditLocation: () => void
+  onEdit: () => void
   onDeactivate: () => void
   deactivating: boolean
 }) {
@@ -260,9 +286,9 @@ function AgentCard({
 
         {!agent.isBuiltIn && (
           <Group justify="flex-end" gap={4} mt="xs">
-            <Tooltip label="Editar ubicacion">
-              <ActionIcon variant="subtle" onClick={onEditLocation}>
-                <IconMapPin size={16} />
+            <Tooltip label="Editar agente">
+              <ActionIcon variant="subtle" onClick={onEdit}>
+                <IconPencil size={16} />
               </ActionIcon>
             </Tooltip>
             <Tooltip label="Desactivar">
@@ -337,7 +363,7 @@ export default function Agents() {
             <AgentCard
               key={agent.id}
               agent={agent}
-              onEditLocation={() => setEditingAgent(agent)}
+              onEdit={() => setEditingAgent(agent)}
               onDeactivate={() => handleDeactivate(agent)}
               deactivating={deactivatingId === agent.id}
             />
@@ -346,7 +372,7 @@ export default function Agents() {
       )}
 
       <NewAgentModal opened={modalOpen} onClose={() => setModalOpen(false)} onCreated={refetch} />
-      <EditLocationModal agent={editingAgent} onClose={() => setEditingAgent(null)} onSaved={refetch} />
+      <EditAgentModal agent={editingAgent} onClose={() => setEditingAgent(null)} onSaved={refetch} />
     </Stack>
   )
 }

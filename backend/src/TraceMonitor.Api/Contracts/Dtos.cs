@@ -74,10 +74,10 @@ public record AgentCreatedDto(int Id, string Name, string ApiKey);
 
 public record CreateAgentRequest(string Name, string Location, string Provider);
 
-/// <summary>Manual correction/override of an agent's map-origin marker — the automatic IP-based
-/// geolocation (see IngestController) fills this in on first report, but only approximates city
-/// level; send null/null/null to clear the marker.</summary>
-public record UpdateAgentLocationRequest(double? Lat, double? Lon, string? Address);
+/// <summary>Full edit of an existing agent's Name/Location/Provider plus its map-origin marker.
+/// Lat/Lon override the automatic IP-based geolocation (see IngestController), which only
+/// approximates city level; send Lat/Lon/Address all null to clear the marker.</summary>
+public record UpdateAgentRequest(string Name, string Location, string Provider, double? Lat, double? Lon, string? Address);
 
 public record IngestHopDto(
     int HopIndex,

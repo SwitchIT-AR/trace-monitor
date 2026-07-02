@@ -10,7 +10,7 @@ import type {
   RunHistoryPoint,
   TargetSummary,
   TraceRun,
-  UpdateAgentLocationRequest,
+  UpdateAgentRequest,
 } from './types'
 
 const API_BASE = '/api'
@@ -59,7 +59,7 @@ export const api = {
   getAgents: () => getJson<Agent[]>('/agents'),
   createAgent: (request: CreateAgentRequest) => postJson<AgentCreated>('/agents', request),
   deactivateAgent: (id: number) => del(`/agents/${id}`),
-  updateAgentLocation: (id: number, request: UpdateAgentLocationRequest) => putJson(`/agents/${id}/location`, request),
+  updateAgent: (id: number, request: UpdateAgentRequest) => putJson(`/agents/${id}`, request),
   getLossSummary: (hours: number) => getJson<LossSummary[]>(`/stats/loss-summary?hours=${hours}`),
   getHopLoss: (targetId: number, agentId: number, hours: number) =>
     getJson<HopLoss[]>(`/targets/${targetId}/hop-loss?agentId=${agentId}&hours=${hours}`),

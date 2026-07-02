@@ -67,7 +67,7 @@ export default function Dashboard() {
             const readings = (runsByTarget?.[t.id] ?? []).filter(
               (r) => selectedAgentId === null || r.agentId === selectedAgentId,
             )
-            return <TargetCard key={t.id} target={t} readings={readings} />
+            return <TargetCard key={t.id} target={t} readings={readings} agents={agents ?? []} />
           })}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>

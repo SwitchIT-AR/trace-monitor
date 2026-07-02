@@ -45,24 +45,30 @@ public class AgentsController(TraceMonitorDbContext db) : ControllerBase
     }
 
     /// <summary>
-    /// Manually corrects an agent's map-origin marker — used to fix an imprecise IP-based
-    /// auto-location (see IngestController.LocateAgentIfUnknownAsync), or to backfill an agent
-    /// that hasn't reported yet. Does not touch the API key, so already-deployed remote agents
-    /// keep working unchanged.
+    /// Edits an existing agent's Name/Location/Provider and/or its map-origin marker
+    /// (Lat/Lon/Address — used to fix an imprecise IP-based auto-location, see
+    /// IngestController.LocateAgentIfUnknownAsync, or to backfill one that hasn't reported yet).
+    /// Does not touch the API key, so already-deployed remote agents keep working unchanged.
     /// </summary>
-    [HttpPut("{id:int}/location")]
-    public async Task<IActionResult> UpdateLocation(int id, UpdateAgentLocationRequest request, CancellationToken ct)
+    [HttpPut("{id:int}")]
+    public async Task<IActionResult> Update(int id, UpdateAgentRequest request, CancellationToken ct)
     {
         var agent = await db.Agents.FindAsync([id], ct);
         if (agent is null)
             return NotFound();
 
         if (agent.IsBuiltIn)
-            return BadRequest("La ubicacion del agente built-in de oficina se configura por Office:* en appsettings, no por API");
+            return BadRequest("El agente built-in de oficina se configura por Office:* en appsettings, no por API");
+
+        if (string.IsNullOrWhiteSpace(request.Name) || string.IsNullOrWhiteSpace(request.Location) || string.IsNullOrWhiteSpace(request.Provider))
+            return BadRequest("Name, Location y Provider son requeridos");
 
         if ((request.Lat is null) != (request.Lon is null))
             return BadRequest("Lat y Lon deben especificarse juntos");
 
+        agent.Name = request.Name;
+        agent.Location = request.Location;
+        agent.Provider = request.Provider;
         agent.Lat = request.Lat;
         agent.Lon = request.Lon;
         agent.Address = request.Address;
