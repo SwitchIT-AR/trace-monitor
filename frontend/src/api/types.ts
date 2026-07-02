@@ -90,6 +90,12 @@ export type CreateAgentRequest = {
   provider: string
 }
 
+export type UpdateAgentLocationRequest = {
+  lat: number | null
+  lon: number | null
+  address: string | null
+}
+
 export type AgentTraceRun = {
   agentId: number
   agentName: string

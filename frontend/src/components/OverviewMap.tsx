@@ -36,7 +36,7 @@ export default function OverviewMap({
 
         return {
           id: `${t.id}-${r.agentId}`,
-          name: readings.length > 1 ? `${t.name} (${r.agentName})` : t.name,
+          name: selectedAgentId !== null || readings.length > 1 ? `${t.name} (${r.agentName})` : t.name,
           color,
           dashed: !r.agentIsBuiltIn,
           points: buildRoutePoints(t, r.hops, origin, r.agentName),

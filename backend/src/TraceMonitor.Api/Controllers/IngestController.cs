@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using TraceMonitor.Api.Contracts;
+using TraceMonitor.Core.Models;
 using TraceMonitor.Core.Services;
 using TraceMonitor.Infrastructure.Data;
 
@@ -26,6 +27,8 @@ public class IngestController(
         if (agent is null)
             return Unauthorized();
 
+        await LocateAgentIfUnknownAsync(agent, ct);
+
         var target = await db.Targets.FindAsync([request.TargetId], ct);
         if (target is null || !target.IsActive)
             return NotFound("Target no encontrado o inactivo");
@@ -43,5 +46,32 @@ public class IngestController(
             await geoIp.ResolveAsync(ips, ct);
 
         return NoContent();
+    }
+
+    /// <summary>
+    /// First successful report from a remote agent with no location yet: geolocate the caller's
+    /// own IP (same GeoIP path used for hops) and use it as an approximate origin marker. Runs
+    /// once — once <see cref="Agent.Lat"/> is set (auto or manually corrected via
+    /// PUT /api/agents/{id}/location) this never overwrites it again. nginx always overwrites
+    /// X-Real-IP with the real connecting IP (see frontend/nginx.conf), so this isn't spoofable
+    /// by the agent itself.
+    /// </summary>
+    private async Task LocateAgentIfUnknownAsync(Agent agent, CancellationToken ct)
+    {
+        if (agent.IsBuiltIn || agent.Lat is not null)
+            return;
+
+        var clientIp = Request.Headers["X-Real-IP"].FirstOrDefault() ?? HttpContext.Connection.RemoteIpAddress?.ToString();
+        if (clientIp is null)
+            return;
+
+        var geo = await geoIp.ResolveAsync([clientIp], ct);
+        if (!geo.TryGetValue(clientIp, out var g) || g.IsPrivate || g.Lat is null || g.Lon is null)
+            return;
+
+        agent.Lat = g.Lat;
+        agent.Lon = g.Lon;
+        agent.Address = $"{g.City}, {g.Country} (ubicación aproximada por IP)";
+        await db.SaveChangesAsync(ct);
     }
 }

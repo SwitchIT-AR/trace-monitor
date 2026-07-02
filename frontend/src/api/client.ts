@@ -8,6 +8,7 @@ import type {
   RunHistoryPoint,
   TargetSummary,
   TraceRun,
+  UpdateAgentLocationRequest,
 } from './types'
 
 const API_BASE = '/api'
@@ -33,6 +34,15 @@ async function del(path: string): Promise<void> {
   if (!res.ok) throw new Error(`DELETE ${path} -> ${res.status}`)
 }
 
+async function putJson(path: string, body: unknown): Promise<void> {
+  const res = await fetch(`${API_BASE}${path}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`PUT ${path} -> ${res.status}`)
+}
+
 export const api = {
   getTargets: () => getJson<TargetSummary[]>('/targets'),
   getLatestRun: (targetId: number) => getJson<TraceRun>(`/targets/${targetId}/latest`),
@@ -47,4 +57,5 @@ export const api = {
   getAgents: () => getJson<Agent[]>('/agents'),
   createAgent: (request: CreateAgentRequest) => postJson<AgentCreated>('/agents', request),
   deactivateAgent: (id: number) => del(`/agents/${id}`),
+  updateAgentLocation: (id: number, request: UpdateAgentLocationRequest) => putJson(`/agents/${id}/location`, request),
 }

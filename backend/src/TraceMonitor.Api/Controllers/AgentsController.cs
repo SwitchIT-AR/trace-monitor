@@ -44,6 +44,33 @@ public class AgentsController(TraceMonitorDbContext db) : ControllerBase
         return new AgentCreatedDto(agent.Id, agent.Name, apiKey);
     }
 
+    /// <summary>
+    /// Manually corrects an agent's map-origin marker — used to fix an imprecise IP-based
+    /// auto-location (see IngestController.LocateAgentIfUnknownAsync), or to backfill an agent
+    /// that hasn't reported yet. Does not touch the API key, so already-deployed remote agents
+    /// keep working unchanged.
+    /// </summary>
+    [HttpPut("{id:int}/location")]
+    public async Task<IActionResult> UpdateLocation(int id, UpdateAgentLocationRequest request, CancellationToken ct)
+    {
+        var agent = await db.Agents.FindAsync([id], ct);
+        if (agent is null)
+            return NotFound();
+
+        if (agent.IsBuiltIn)
+            return BadRequest("La ubicacion del agente built-in de oficina se configura por Office:* en appsettings, no por API");
+
+        if ((request.Lat is null) != (request.Lon is null))
+            return BadRequest("Lat y Lon deben especificarse juntos");
+
+        agent.Lat = request.Lat;
+        agent.Lon = request.Lon;
+        agent.Address = request.Address;
+
+        await db.SaveChangesAsync(ct);
+        return NoContent();
+    }
+
     [HttpDelete("{id:int}")]
     public async Task<IActionResult> Deactivate(int id, CancellationToken ct)
     {
