@@ -4,6 +4,7 @@ import { api } from '../api/client'
 import { usePolling } from '../hooks/usePolling'
 import TargetCard from '../components/TargetCard'
 import OverviewMap from '../components/OverviewMap'
+import LossSummaryPanel from '../components/LossSummaryPanel'
 import type { AgentTraceRun } from '../api/types'
 
 const SIDEBAR_WIDTH = 300
@@ -42,7 +43,7 @@ export default function Dashboard() {
   const activeAgents = (agents ?? []).filter((a) => a.isActive)
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, height: 'calc(100vh - 92px)' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
       {activeAgents.length > 1 && (
         <SegmentedControl
           value={selectedAgentId === null ? 'all' : String(selectedAgentId)}
@@ -51,7 +52,7 @@ export default function Dashboard() {
           style={{ alignSelf: 'flex-start' }}
         />
       )}
-      <div style={{ display: 'flex', gap: 16, flex: 1, minHeight: 0 }}>
+      <div style={{ display: 'flex', gap: 16, height: '60vh', minHeight: 420 }}>
         <div
           style={{
             width: SIDEBAR_WIDTH,
@@ -78,6 +79,7 @@ export default function Dashboard() {
           />
         </div>
       </div>
+      <LossSummaryPanel selectedAgentId={selectedAgentId} />
     </div>
   )
 }

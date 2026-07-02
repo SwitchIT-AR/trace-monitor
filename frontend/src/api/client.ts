@@ -3,6 +3,8 @@ import type {
   AgentCreated,
   AgentTraceRun,
   CreateAgentRequest,
+  HopLoss,
+  LossSummary,
   OfficeLocation,
   PathChangeEvent,
   RunHistoryPoint,
@@ -58,4 +60,7 @@ export const api = {
   createAgent: (request: CreateAgentRequest) => postJson<AgentCreated>('/agents', request),
   deactivateAgent: (id: number) => del(`/agents/${id}`),
   updateAgentLocation: (id: number, request: UpdateAgentLocationRequest) => putJson(`/agents/${id}/location`, request),
+  getLossSummary: (hours: number) => getJson<LossSummary[]>(`/stats/loss-summary?hours=${hours}`),
+  getHopLoss: (targetId: number, agentId: number, hours: number) =>
+    getJson<HopLoss[]>(`/targets/${targetId}/hop-loss?agentId=${agentId}&hours=${hours}`),
 }

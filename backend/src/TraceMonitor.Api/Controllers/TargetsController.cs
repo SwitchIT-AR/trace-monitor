@@ -155,6 +155,38 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
         return result;
     }
 
+    /// <summary>
+    /// Average loss per physical hop (grouped by hop index + IP, not just index, since a route
+    /// change mid-window would otherwise mix loss numbers from two different hops that happened
+    /// to sit at the same position) for one target+agent over the trailing window — the "which
+    /// segment is dropping packets" drill-down for the dashboard's loss summary.
+    /// </summary>
+    [HttpGet("{id:int}/hop-loss")]
+    public async Task<ActionResult<IReadOnlyList<HopLossDto>>> GetHopLoss(
+        int id, [FromQuery] int agentId, [FromQuery] int hours = 24, CancellationToken ct = default)
+    {
+        var since = DateTime.UtcNow.AddHours(-hours);
+
+        var runIds = db.TraceRuns
+            .Where(r => r.TargetId == id && r.AgentId == agentId && r.StartedAtUtc >= since)
+            .Select(r => r.Id);
+
+        var grouped = await db.TraceHops
+            .Where(h => runIds.Contains(h.TraceRunId))
+            .GroupBy(h => new { h.HopIndex, h.Ip })
+            .Select(g => new HopLossDto(
+                g.Key.HopIndex,
+                g.Key.Ip,
+                g.OrderByDescending(h => h.Id).Select(h => h.Hostname).FirstOrDefault(),
+                g.Average(h => h.LossPct),
+                g.Count()))
+            .OrderBy(d => d.HopIndex)
+            .ThenByDescending(d => d.AvgLossPct)
+            .ToListAsync(ct);
+
+        return grouped;
+    }
+
     [HttpGet("{id:int}/events")]
     public async Task<ActionResult<IReadOnlyList<PathChangeEventDto>>> GetEvents(int id, [FromQuery] int limit = 100, CancellationToken ct = default)
     {

@@ -124,6 +124,11 @@ public class GeoIpService(TraceMonitorDbContext db, IHttpClientFactory httpClien
         if (b.Length != 4)
             return false; // only IPv4 hops are expected; treat anything else as public rather than guess
 
+        // Note: CGNAT (100.64.0.0/10) is deliberately NOT included here. Unlike RFC1918/loopback/
+        // link-local, a CGNAT address is the ISP's real internet-facing NAT gateway — it's exactly
+        // what a public IP geolocation lookup is meant to resolve (usually to city-level accuracy),
+        // and for a residential/small-site agent behind CGNAT it's often the only IP the backend
+        // ever sees. Treating it as unqueryable meant those agents could never auto-locate.
         return b[0] switch
         {
             10 => true,
@@ -131,7 +136,6 @@ public class GeoIpService(TraceMonitorDbContext db, IHttpClientFactory httpClien
             169 when b[1] == 254 => true,
             172 when b[1] is >= 16 and <= 31 => true,
             192 when b[1] == 168 => true,
-            100 when b[1] is >= 64 and <= 127 => true, // CGNAT
             _ => false,
         };
     }

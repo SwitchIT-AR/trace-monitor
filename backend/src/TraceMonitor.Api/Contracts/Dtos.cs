@@ -107,3 +107,18 @@ public record AgentTraceRunDto(
     double OverallAvgRttMs,
     DateTime? LastPathChangeAtUtc,
     IReadOnlyList<HopDto> Hops);
+
+public record LossSummaryDto(
+    int TargetId,
+    string TargetName,
+    int AgentId,
+    string AgentName,
+    double AvgLossPct,
+    int RunCount);
+
+public record HopLossDto(
+    int HopIndex,
+    string? Ip,
+    string? Hostname,
+    double AvgLossPct,
+    int SampleCount);

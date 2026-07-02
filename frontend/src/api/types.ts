@@ -107,3 +107,20 @@ export type AgentTraceRun = {
   lastPathChangeAtUtc: string | null
   hops: Hop[]
 }
+
+export type LossSummary = {
+  targetId: number
+  targetName: string
+  agentId: number
+  agentName: string
+  avgLossPct: number
+  runCount: number
+}
+
+export type HopLoss = {
+  hopIndex: number
+  ip: string | null
+  hostname: string | null
+  avgLossPct: number
+  sampleCount: number
+}
