@@ -93,6 +93,9 @@ public partial class MtrRunner(ILogger<MtrRunner> logger) : IMtrRunner
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNameCaseInsensitive = true,
+        // Older mtr builds (e.g. 0.92 on Debian buster) quote numeric fields in their JSON report
+        // ("count": "1" instead of 1); newer builds emit real numbers. Accept either.
+        NumberHandling = JsonNumberHandling.AllowReadingFromString,
     };
 
     private class MtrJsonRoot
