@@ -67,7 +67,9 @@ public class TraceIngestionService(
 
         db.TraceRuns.Add(run);
 
-        if (lastRun is not null && lastRun.PathHash != pathHash)
+        var agent = await db.Agents.FindAsync([agentId], ct);
+
+        if (lastRun is not null && lastRun.PathHash != pathHash && (agent?.PathChangeAlertsEnabled ?? true))
         {
             var previousHops = await db.TraceHops
                 .Where(h => h.TraceRunId == lastRun.Id)
@@ -86,7 +88,6 @@ public class TraceIngestionService(
             logger.LogInformation("Cambio de ruta detectado para target {TargetId} / agente {AgentId} ({Host})", targetId, agentId, report.DestinationHost);
         }
 
-        var agent = await db.Agents.FindAsync([agentId], ct);
         if (agent is not null)
             agent.LastSeenAtUtc = DateTime.UtcNow;
 

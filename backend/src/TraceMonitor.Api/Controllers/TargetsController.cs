@@ -171,20 +171,32 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
             .Where(r => r.TargetId == id && r.AgentId == agentId && r.StartedAtUtc >= since)
             .Select(r => r.Id);
 
+        // Npgsql can't translate an ordered FirstOrDefault() nested inside a GroupBy projection,
+        // so the "latest hostname per (hop, ip)" lookup is a separate, plain query instead.
         var grouped = await db.TraceHops
             .Where(h => runIds.Contains(h.TraceRunId))
             .GroupBy(h => new { h.HopIndex, h.Ip })
-            .Select(g => new HopLossDto(
+            .Select(g => new
+            {
                 g.Key.HopIndex,
                 g.Key.Ip,
-                g.OrderByDescending(h => h.Id).Select(h => h.Hostname).FirstOrDefault(),
-                g.Average(h => h.LossPct),
-                g.Count()))
-            .OrderBy(d => d.HopIndex)
-            .ThenByDescending(d => d.AvgLossPct)
+                LatestHopId = g.Max(h => h.Id),
+                AvgLossPct = g.Average(h => h.LossPct),
+                SampleCount = g.Count(),
+            })
             .ToListAsync(ct);
 
-        return grouped;
+        var latestIds = grouped.Select(g => g.LatestHopId).ToList();
+        var hostnamesById = await db.TraceHops
+            .Where(h => latestIds.Contains(h.Id))
+            .ToDictionaryAsync(h => h.Id, h => h.Hostname, ct);
+
+        return grouped
+            .Select(g => new HopLossDto(
+                g.HopIndex, g.Ip, hostnamesById.GetValueOrDefault(g.LatestHopId), g.AvgLossPct, g.SampleCount))
+            .OrderBy(d => d.HopIndex)
+            .ThenByDescending(d => d.AvgLossPct)
+            .ToList();
     }
 
     [HttpGet("{id:int}/events")]

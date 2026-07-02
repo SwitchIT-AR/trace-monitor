@@ -28,6 +28,11 @@ public class Agent
     public double? Lon { get; set; }
     public string? Address { get; set; }
 
+    /// <summary>When false, route changes are still recorded (TraceRun/PathHash) but no
+    /// PathChangeEvent is raised for this agent — for sites with a real, by-design multi-WAN/
+    /// load-balanced uplink where "the path changed" fires on every run and isn't actionable.</summary>
+    public bool PathChangeAlertsEnabled { get; set; } = true;
+
     public List<TraceRun> Runs { get; set; } = [];
     public List<PathChangeEvent> Events { get; set; } = [];
 }

@@ -75,6 +75,7 @@ export type Agent = {
   lat: number | null
   lon: number | null
   address: string | null
+  pathChangeAlertsEnabled: boolean
 }
 
 // Returned only once, right when a new agent is created — the API never exposes the key again.
@@ -97,6 +98,7 @@ export type UpdateAgentRequest = {
   lat: number | null
   lon: number | null
   address: string | null
+  pathChangeAlertsEnabled: boolean
 }
 
 export type AgentTraceRun = {

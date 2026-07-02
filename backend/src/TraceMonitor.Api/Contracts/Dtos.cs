@@ -67,7 +67,8 @@ public record AgentSummaryDto(
     DateTime? LastSeenAtUtc,
     double? Lat,
     double? Lon,
-    string? Address);
+    string? Address,
+    bool PathChangeAlertsEnabled);
 
 /// <summary>Returned only once, right after creation — the plaintext ApiKey is never retrievable again.</summary>
 public record AgentCreatedDto(int Id, string Name, string ApiKey);
@@ -77,7 +78,8 @@ public record CreateAgentRequest(string Name, string Location, string Provider);
 /// <summary>Full edit of an existing agent's Name/Location/Provider plus its map-origin marker.
 /// Lat/Lon override the automatic IP-based geolocation (see IngestController), which only
 /// approximates city level; send Lat/Lon/Address all null to clear the marker.</summary>
-public record UpdateAgentRequest(string Name, string Location, string Provider, double? Lat, double? Lon, string? Address);
+public record UpdateAgentRequest(
+    string Name, string Location, string Provider, double? Lat, double? Lon, string? Address, bool PathChangeAlertsEnabled);
 
 public record IngestHopDto(
     int HopIndex,

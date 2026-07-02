@@ -13,12 +13,13 @@ import {
   NumberInput,
   SimpleGrid,
   Stack,
+  Switch,
   Text,
   TextInput,
   Title,
   Tooltip,
 } from '@mantine/core'
-import { IconCheck, IconCopy, IconMapPinOff, IconPencil, IconPlus, IconServer2, IconTrash } from '@tabler/icons-react'
+import { IconBellOff, IconCheck, IconCopy, IconMapPinOff, IconPencil, IconPlus, IconServer2, IconTrash } from '@tabler/icons-react'
 import { notifications } from '@mantine/notifications'
 import { api } from '../api/client'
 import { usePolling } from '../hooks/usePolling'
@@ -159,6 +160,7 @@ function EditAgentModal({
   const [lat, setLat] = useState<number | string>('')
   const [lon, setLon] = useState<number | string>('')
   const [address, setAddress] = useState('')
+  const [pathChangeAlertsEnabled, setPathChangeAlertsEnabled] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
@@ -168,6 +170,7 @@ function EditAgentModal({
     setLat(agent?.lat ?? '')
     setLon(agent?.lon ?? '')
     setAddress(agent?.address ?? '')
+    setPathChangeAlertsEnabled(agent?.pathChangeAlertsEnabled ?? true)
   }, [agent])
 
   const handleSubmit = async () => {
@@ -181,6 +184,7 @@ function EditAgentModal({
         lat: lat === '' ? null : Number(lat),
         lon: lon === '' ? null : Number(lon),
         address: address.trim() || null,
+        pathChangeAlertsEnabled,
       })
       onSaved()
       onClose()
@@ -218,6 +222,13 @@ function EditAgentModal({
           placeholder="Av. Corrientes 1234, CABA"
           value={address}
           onChange={(e) => setAddress(e.currentTarget.value)}
+        />
+        <Switch
+          label="Alertar cambios de ruta"
+          description="Apagalo en sitios con doble WAN / balanceo por diseño (ej. Movistar + Fibertel), donde 'la ruta cambió' es esperable en cada corrida y no es información util. Las corridas se siguen guardando igual, solo se deja de generar el evento de alerta."
+          checked={pathChangeAlertsEnabled}
+          onChange={(e) => setPathChangeAlertsEnabled(e.currentTarget.checked)}
+          mt="xs"
         />
         <Button
           onClick={handleSubmit}
@@ -273,6 +284,14 @@ function AgentCard({
             <IconMapPinOff size={14} color="var(--mantine-color-orange-6)" />
             <Text size="xs" c="orange">
               todavia sin ubicacion: no muestra marcador de origen en el mapa
+            </Text>
+          </Group>
+        )}
+        {!agent.pathChangeAlertsEnabled && (
+          <Group gap={4}>
+            <IconBellOff size={14} color="var(--mantine-color-dimmed)" />
+            <Text size="xs" c="dimmed">
+              alertas de cambio de ruta silenciadas
             </Text>
           </Group>
         )}

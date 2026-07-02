@@ -72,6 +72,7 @@ public class AgentsController(TraceMonitorDbContext db) : ControllerBase
         agent.Lat = request.Lat;
         agent.Lon = request.Lon;
         agent.Address = request.Address;
+        agent.PathChangeAlertsEnabled = request.PathChangeAlertsEnabled;
 
         await db.SaveChangesAsync(ct);
         return NoContent();
@@ -93,5 +94,6 @@ public class AgentsController(TraceMonitorDbContext db) : ControllerBase
     }
 
     private static AgentSummaryDto ToSummaryDto(Agent a) =>
-        new(a.Id, a.Name, a.Location, a.Provider, a.IsActive, a.IsBuiltIn, a.CreatedAtUtc, a.LastSeenAtUtc, a.Lat, a.Lon, a.Address);
+        new(a.Id, a.Name, a.Location, a.Provider, a.IsActive, a.IsBuiltIn, a.CreatedAtUtc, a.LastSeenAtUtc,
+            a.Lat, a.Lon, a.Address, a.PathChangeAlertsEnabled);
 }
