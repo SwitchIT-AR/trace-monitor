@@ -28,6 +28,8 @@ services:
       Trace__IntervalSeconds: ${TRACE_INTERVAL_SECONDS:-120}
       Trace__ReportCycles: ${TRACE_REPORT_CYCLES:-10}
       Cors__AllowedOrigins__0: http://localhost:5173
+      Anthropic__ApiKey: ${ANTHROPIC_API_KEY:?ANTHROPIC_API_KEY is required}
+      Anthropic__Model: ${ANTHROPIC_MODEL:-claude-opus-4-8}
 
   frontend:
     build: ./frontend

@@ -2,11 +2,13 @@ import type {
   Agent,
   AgentCreated,
   AgentTraceRun,
+  AiAnalysisResult,
   CreateAgentRequest,
   HopLoss,
   LossSummary,
   OfficeLocation,
   PathChangeEvent,
+  RouteTimelineData,
   RunHistoryPoint,
   TargetSummary,
   TraceRun,
@@ -53,7 +55,6 @@ export const api = {
     const from = new Date(Date.now() - sinceHours * 3600_000).toISOString()
     return getJson<RunHistoryPoint[]>(`/targets/${targetId}/runs?from=${encodeURIComponent(from)}`)
   },
-  getTargetEvents: (targetId: number) => getJson<PathChangeEvent[]>(`/targets/${targetId}/events`),
   getAllEvents: () => getJson<PathChangeEvent[]>('/events'),
   getOffice: () => getJson<OfficeLocation>('/office'),
   getAgents: () => getJson<Agent[]>('/agents'),
@@ -63,4 +64,8 @@ export const api = {
   getLossSummary: (hours: number) => getJson<LossSummary[]>(`/stats/loss-summary?hours=${hours}`),
   getHopLoss: (targetId: number, agentId: number, hours: number) =>
     getJson<HopLoss[]>(`/targets/${targetId}/hop-loss?agentId=${agentId}&hours=${hours}`),
+  getRouteTimeline: (targetId: number, agentId: number, hours: number) =>
+    getJson<RouteTimelineData>(`/targets/${targetId}/route-timeline?agentId=${agentId}&hours=${hours}`),
+  getRunHops: (targetId: number, runId: number) => getJson<TraceRun>(`/targets/${targetId}/runs/${runId}/hops`),
+  runAiAnalysis: () => postJson<AiAnalysisResult>('/ai/analyze', {}),
 }

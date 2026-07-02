@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TraceMonitor.Infrastructure.Data;
@@ -11,9 +12,11 @@ using TraceMonitor.Infrastructure.Data;
 namespace TraceMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(TraceMonitorDbContext))]
-    partial class TraceMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702224325_AddManualOverrideToIpGeoCache")]
+    partial class AddManualOverrideToIpGeoCache
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -164,44 +167,6 @@ namespace TraceMonitor.Infrastructure.Migrations
                     b.HasIndex("TargetId", "AgentId", "DetectedAtUtc");
 
                     b.ToTable("PathChangeEvents");
-                });
-
-            modelBuilder.Entity("TraceMonitor.Core.Models.RouteLabel", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("AgentId")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime>("FirstSeenUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Label")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("LastSeenUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("RouteSignatureHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int>("TargetId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AgentId");
-
-                    b.HasIndex("TargetId", "AgentId", "RouteSignatureHash")
-                        .IsUnique();
-
-                    b.ToTable("RouteLabels");
                 });
 
             modelBuilder.Entity("TraceMonitor.Core.Models.Target", b =>
@@ -372,9 +337,6 @@ namespace TraceMonitor.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("RouteSignatureHash")
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("StartedAtUtc")
                         .HasColumnType("timestamp with time zone");
 
@@ -384,8 +346,6 @@ namespace TraceMonitor.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("AgentId");
-
-                    b.HasIndex("TargetId", "AgentId", "RouteSignatureHash");
 
                     b.HasIndex("TargetId", "AgentId", "StartedAtUtc");
 
@@ -402,25 +362,6 @@ namespace TraceMonitor.Infrastructure.Migrations
 
                     b.HasOne("TraceMonitor.Core.Models.Target", "Target")
                         .WithMany("Events")
-                        .HasForeignKey("TargetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Agent");
-
-                    b.Navigation("Target");
-                });
-
-            modelBuilder.Entity("TraceMonitor.Core.Models.RouteLabel", b =>
-                {
-                    b.HasOne("TraceMonitor.Core.Models.Agent", "Agent")
-                        .WithMany()
-                        .HasForeignKey("AgentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TraceMonitor.Core.Models.Target", "Target")
-                        .WithMany()
                         .HasForeignKey("TargetId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

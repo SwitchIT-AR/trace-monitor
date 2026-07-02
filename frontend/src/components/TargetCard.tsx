@@ -1,4 +1,4 @@
-import { Badge, Card, Divider, Group, Stack, Text } from '@mantine/core'
+import { Badge, Card, Divider, Group, Stack, Text, Tooltip } from '@mantine/core'
 import { IconAlertTriangle, IconCheck } from '@tabler/icons-react'
 import { useNavigate } from 'react-router-dom'
 import type { Agent, AgentTraceRun, TargetSummary } from '../api/types'
@@ -25,7 +25,7 @@ function AgentReading({
 
   return (
     <Stack gap={4}>
-      <Text size="xs" fw={600} c="dimmed">
+      <Text size="xs" fw={600} c="dimmed" truncate="end">
         {showAgentName ? `${reading.agentName}: ` : ''}
         {agentProvider} → {targetProvider}
       </Text>
@@ -78,13 +78,21 @@ export default function TargetCard({
   return (
     <Card withBorder shadow="sm" padding="lg" style={{ cursor: 'pointer' }} onClick={() => navigate(`/targets/${target.id}`)}>
       <Stack gap="xs">
-        <Group justify="space-between">
-          <Text fw={600}>{target.name}</Text>
-          <Badge variant="light">{target.provider}</Badge>
+        <Group justify="space-between" wrap="nowrap" gap="xs">
+          <Tooltip label={target.name} openDelay={400} disabled={target.name.length < 24}>
+            <Text fw={600} truncate="end" style={{ minWidth: 0, flex: 1 }}>
+              {target.name}
+            </Text>
+          </Tooltip>
+          <Badge variant="light" style={{ flexShrink: 0 }}>
+            {target.provider}
+          </Badge>
         </Group>
-        <Text size="sm" c="dimmed">
-          {target.destinationHost}
-        </Text>
+        <Tooltip label={target.destinationHost} openDelay={400} disabled={target.destinationHost.length < 30}>
+          <Text size="sm" c="dimmed" truncate="end">
+            {target.destinationHost}
+          </Text>
+        </Tooltip>
 
         {readings.length === 0 ? (
           <Text size="sm" c="dimmed" mt="xs">

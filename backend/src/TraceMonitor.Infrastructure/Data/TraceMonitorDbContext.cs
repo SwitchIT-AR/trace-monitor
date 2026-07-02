@@ -11,6 +11,7 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
     public DbSet<TraceHop> TraceHops => Set<TraceHop>();
     public DbSet<PathChangeEvent> PathChangeEvents => Set<PathChangeEvent>();
     public DbSet<IpGeoCache> IpGeoCache => Set<IpGeoCache>();
+    public DbSet<RouteLabel> RouteLabels => Set<RouteLabel>();
 
     /// <summary>Id of the seeded built-in agent that represents the office origin, fed in-process by TraceSchedulerWorker.</summary>
     public const int BuiltInAgentId = 1;
@@ -30,6 +31,7 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
         modelBuilder.Entity<TraceRun>(e =>
         {
             e.HasIndex(r => new { r.TargetId, r.AgentId, r.StartedAtUtc });
+            e.HasIndex(r => new { r.TargetId, r.AgentId, r.RouteSignatureHash });
             e.HasOne(r => r.Target).WithMany(t => t.Runs).HasForeignKey(r => r.TargetId);
             e.HasOne(r => r.Agent).WithMany(a => a.Runs).HasForeignKey(r => r.AgentId);
         });
@@ -50,6 +52,13 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
         modelBuilder.Entity<IpGeoCache>(e =>
         {
             e.HasKey(g => g.Ip);
+        });
+
+        modelBuilder.Entity<RouteLabel>(e =>
+        {
+            e.HasIndex(r => new { r.TargetId, r.AgentId, r.RouteSignatureHash }).IsUnique();
+            e.HasOne(r => r.Target).WithMany().HasForeignKey(r => r.TargetId);
+            e.HasOne(r => r.Agent).WithMany().HasForeignKey(r => r.AgentId);
         });
 
         // Lat/Lon/Address are intentionally left null here — Program.cs fills them in at startup

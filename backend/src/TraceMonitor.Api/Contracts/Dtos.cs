@@ -124,3 +124,19 @@ public record HopLossDto(
     string? Hostname,
     double AvgLossPct,
     int SampleCount);
+
+public record RouteSegmentDto(
+    string? RouteSignatureHash,
+    string Label,
+    long RepresentativeRunId,
+    DateTime StartedAtUtc,
+    DateTime? EndedAtUtc,
+    int RunCount,
+    bool IsPrimary);
+
+public record RouteTimelineDto(
+    int DistinctRouteCount,
+    int FlapCount,
+    IReadOnlyList<RouteSegmentDto> Segments);
+
+public record AiAnalysisResultDto(string AnalysisText, DateTime GeneratedAtUtc, string ModelUsed);

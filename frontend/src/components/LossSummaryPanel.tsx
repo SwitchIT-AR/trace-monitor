@@ -79,7 +79,7 @@ export default function LossSummaryPanel({ selectedAgentId }: { selectedAgentId:
 
   return (
     <Paper withBorder p="md">
-      <Group justify="space-between" mb="sm">
+      <Group justify="space-between" mb="sm" wrap="wrap">
         <div>
           <Title order={4}>Estadisticas de perdida</Title>
           <Text size="xs" c="dimmed">

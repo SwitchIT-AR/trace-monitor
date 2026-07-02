@@ -5,6 +5,11 @@ public class IpGeoCache
     public required string Ip { get; set; }
     public bool IsPrivate { get; set; }
 
+    /// <summary>True when Lat/Lon/City/Country were corrected by hand instead of ip-api.com —
+    /// some transit/backbone ASN blocks resolve to the carrier's HQ city rather than the actual
+    /// routing PoP, and re-querying the provider would just return the same wrong answer again.</summary>
+    public bool IsManualOverride { get; set; }
+
     public string? City { get; set; }
     public string? Country { get; set; }
     public string? Isp { get; set; }

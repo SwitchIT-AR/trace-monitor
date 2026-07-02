@@ -111,7 +111,7 @@ function PointPopup({ routeName, point }: { routeName: string; point: RoutePoint
 
 export default function MultiRouteMap({
   routes,
-  height = 400,
+  height = 'clamp(280px, 50vh, 500px)',
 }: {
   routes: MapRoute[]
   height?: number | string

@@ -199,6 +199,96 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
             .ToList();
     }
 
+    /// <summary>
+    /// Collapses consecutive runs sharing the same route signature (ASN sequence) into segments —
+    /// "Ruta A active for 2d4h, then Ruta B for 12m, then back to Ruta A" — instead of one row per
+    /// raw run, so flapping between a couple of known ISP paths reads very differently from
+    /// jumping to a new route every day. The route with the most cumulative active time in the
+    /// window is marked primary; everything else is an alternate.
+    /// </summary>
+    [HttpGet("{id:int}/route-timeline")]
+    public async Task<ActionResult<RouteTimelineDto>> GetRouteTimeline(
+        int id, [FromQuery] int agentId, [FromQuery] int hours = 168, CancellationToken ct = default)
+    {
+        var since = DateTime.UtcNow.AddHours(-hours);
+
+        var runs = await db.TraceRuns
+            .Where(r => r.TargetId == id && r.AgentId == agentId && r.StartedAtUtc >= since)
+            .OrderBy(r => r.StartedAtUtc)
+            .Select(r => new { r.Id, r.StartedAtUtc, r.RouteSignatureHash })
+            .ToListAsync(ct);
+
+        if (runs.Count == 0)
+            return new RouteTimelineDto(0, 0, []);
+
+        var labels = await db.RouteLabels
+            .Where(l => l.TargetId == id && l.AgentId == agentId)
+            .ToDictionaryAsync(l => l.RouteSignatureHash, l => l.Label, ct);
+
+        var rawSegments = new List<(string? Hash, long RepresentativeRunId, DateTime Start, int RunCount)>();
+        foreach (var run in runs)
+        {
+            if (rawSegments.Count > 0 && rawSegments[^1].Hash == run.RouteSignatureHash)
+            {
+                var last = rawSegments[^1];
+                rawSegments[^1] = (last.Hash, last.RepresentativeRunId, last.Start, last.RunCount + 1);
+            }
+            else
+            {
+                rawSegments.Add((run.RouteSignatureHash, run.Id, run.StartedAtUtc, 1));
+            }
+        }
+
+        // Dictionary<string, T> throws on a null key, and a good chunk of runs legitimately have
+        // no RouteSignatureHash yet (no hop resolved to a public ASN) — group those under a
+        // sentinel key instead of the raw nullable hash.
+        const string unknownKey = "\0unknown";
+        string Key(string? hash) => hash ?? unknownKey;
+
+        var now = DateTime.UtcNow;
+        var durationByHash = new Dictionary<string, TimeSpan>();
+        var segmentEnds = new DateTime?[rawSegments.Count];
+        for (var i = 0; i < rawSegments.Count; i++)
+        {
+            var end = i < rawSegments.Count - 1 ? rawSegments[i + 1].Start : (DateTime?)null;
+            segmentEnds[i] = end;
+            var duration = (end ?? now) - rawSegments[i].Start;
+            var key = Key(rawSegments[i].Hash);
+            durationByHash[key] = durationByHash.GetValueOrDefault(key) + duration;
+        }
+
+        var primaryKey = durationByHash.OrderByDescending(kv => kv.Value).First().Key;
+
+        var segments = rawSegments.Select((s, i) => new RouteSegmentDto(
+            s.Hash,
+            s.Hash is not null ? labels.GetValueOrDefault(s.Hash, "Ruta desconocida") : "Ruta desconocida",
+            s.RepresentativeRunId,
+            s.Start,
+            segmentEnds[i],
+            s.RunCount,
+            Key(s.Hash) == primaryKey)).ToList();
+
+        var distinctRouteCount = rawSegments.Select(s => Key(s.Hash)).Distinct().Count();
+
+        return new RouteTimelineDto(distinctRouteCount, segments.Count - 1, segments);
+    }
+
+    /// <summary>Hop detail for one historical run, for the route-timeline's click-to-expand view —
+    /// the current segment already has this data client-side via <c>latest</c>/<c>latest-by-agent</c>.</summary>
+    [HttpGet("{id:int}/runs/{runId:long}/hops")]
+    public async Task<ActionResult<TraceRunDto>> GetRunHops(int id, long runId, [FromServices] IGeoIpService geoIp, CancellationToken ct)
+    {
+        var run = await db.TraceRuns
+            .Where(r => r.Id == runId && r.TargetId == id)
+            .Include(r => r.Hops)
+            .FirstOrDefaultAsync(ct);
+
+        if (run is null)
+            return NotFound();
+
+        return await ToDtoAsync(run, geoIp, ct);
+    }
+
     [HttpGet("{id:int}/events")]
     public async Task<ActionResult<IReadOnlyList<PathChangeEventDto>>> GetEvents(int id, [FromQuery] int limit = 100, CancellationToken ct = default)
     {

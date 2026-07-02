@@ -129,3 +129,25 @@ export type HopLoss = {
   avgLossPct: number
   sampleCount: number
 }
+
+export type RouteSegment = {
+  routeSignatureHash: string | null
+  label: string
+  representativeRunId: number
+  startedAtUtc: string
+  endedAtUtc: string | null
+  runCount: number
+  isPrimary: boolean
+}
+
+export type RouteTimelineData = {
+  distinctRouteCount: number
+  flapCount: number
+  segments: RouteSegment[]
+}
+
+export type AiAnalysisResult = {
+  analysisText: string
+  generatedAtUtc: string
+  modelUsed: string
+}

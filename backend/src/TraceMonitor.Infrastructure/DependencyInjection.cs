@@ -26,6 +26,7 @@ public static class DependencyInjection
         services.AddSingleton<IPathChangeDetector, PathChangeDetector>();
         services.AddScoped<ITraceIngestionService, TraceIngestionService>();
         services.AddScoped<IAgentAuthenticator, AgentAuthenticator>();
+        services.AddScoped<IAiAnalysisService, AiAnalysisService>();
         services.AddHostedService<TraceSchedulerWorker>();
 
         return services;

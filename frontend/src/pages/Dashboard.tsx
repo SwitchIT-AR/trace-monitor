@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, Center, Loader, SegmentedControl } from '@mantine/core'
+import { Alert, Box, Center, Flex, Loader, SegmentedControl } from '@mantine/core'
 import { api } from '../api/client'
 import { usePolling } from '../hooks/usePolling'
 import TargetCard from '../components/TargetCard'
@@ -52,16 +52,12 @@ export default function Dashboard() {
           style={{ alignSelf: 'flex-start' }}
         />
       )}
-      <div style={{ display: 'flex', gap: 16, height: '60vh', minHeight: 420 }}>
-        <div
-          style={{
-            width: SIDEBAR_WIDTH,
-            flexShrink: 0,
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 12,
-            overflowY: 'auto',
-          }}
+      <Flex direction={{ base: 'column', md: 'row' }} gap={16} h={{ base: 'auto', md: '60vh' }} mih={420}>
+        <Box
+          w="100%"
+          maw={{ base: '100%', md: SIDEBAR_WIDTH }}
+          mah={420}
+          style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', gap: 12, overflowY: 'auto' }}
         >
           {targets?.map((t) => {
             const readings = (runsByTarget?.[t.id] ?? []).filter(
@@ -69,8 +65,8 @@ export default function Dashboard() {
             )
             return <TargetCard key={t.id} target={t} readings={readings} agents={agents ?? []} />
           })}
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        </Box>
+        <div style={{ flex: 1, minWidth: 0, minHeight: 320 }}>
           <OverviewMap
             targets={targets ?? []}
             runsByTarget={runsByTarget}
@@ -78,7 +74,7 @@ export default function Dashboard() {
             selectedAgentId={selectedAgentId}
           />
         </div>
-      </div>
+      </Flex>
       <LossSummaryPanel selectedAgentId={selectedAgentId} />
     </div>
   )
