@@ -1,6 +1,7 @@
 import type {
   Agent,
   AgentCreated,
+  AgentTraceRun,
   CreateAgentRequest,
   OfficeLocation,
   PathChangeEvent,
@@ -35,6 +36,7 @@ async function del(path: string): Promise<void> {
 export const api = {
   getTargets: () => getJson<TargetSummary[]>('/targets'),
   getLatestRun: (targetId: number) => getJson<TraceRun>(`/targets/${targetId}/latest`),
+  getLatestRunsByAgent: (targetId: number) => getJson<AgentTraceRun[]>(`/targets/${targetId}/latest-by-agent`),
   getRunHistory: (targetId: number, sinceHours: number) => {
     const from = new Date(Date.now() - sinceHours * 3600_000).toISOString()
     return getJson<RunHistoryPoint[]>(`/targets/${targetId}/runs?from=${encodeURIComponent(from)}`)

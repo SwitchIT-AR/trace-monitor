@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 30_000) {
+export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 30_000, deps: unknown[] = []) {
   const [data, setData] = useState<T | null>(null)
   const [error, setError] = useState<Error | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,7 +42,8 @@ export function usePolling<T>(fetcher: () => Promise<T>, intervalMs = 30_000) {
       cancelled = true
       clearInterval(id)
     }
-  }, [intervalMs])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [intervalMs, ...deps])
 
   return { data, error, loading, refetch }
 }

@@ -18,9 +18,11 @@ const DARK_TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
 export type MapRoute = {
-  id: number
+  id: string
   name: string
   color: string
+  /** Distinguishes routes that share a color (same target, different agent). */
+  dashed?: boolean
   points: RoutePoint[]
 }
 
@@ -68,7 +70,7 @@ function PointPopup({ routeName, point }: { routeName: string; point: RoutePoint
   if (point.kind === 'office') {
     return (
       <Popup>
-        <strong>Oficina</strong>
+        <strong>{point.label}</strong>
         <br />
         {point.city}
       </Popup>
@@ -150,7 +152,12 @@ export default function MultiRouteMap({
 
       {routes.map((route) => (
         <Fragment key={route.id}>
-          <Polyline positions={route.points.map((p) => [p.lat, p.lon])} color={route.color} weight={3} />
+          <Polyline
+            positions={route.points.map((p) => [p.lat, p.lon])}
+            color={route.color}
+            weight={3}
+            dashArray={route.dashed ? '6 6' : undefined}
+          />
           {route.points
             .filter((p) => p.kind !== 'office')
             .map((p) => (

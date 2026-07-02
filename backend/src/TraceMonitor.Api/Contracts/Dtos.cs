@@ -91,3 +91,14 @@ public record IngestTraceRequest(
     DateTime StartedAtUtc,
     int PacketsSent,
     IReadOnlyList<IngestHopDto> Hops);
+
+public record AgentTraceRunDto(
+    int AgentId,
+    string AgentName,
+    bool AgentIsBuiltIn,
+    long RunId,
+    DateTime StartedAtUtc,
+    double OverallLossPct,
+    double OverallAvgRttMs,
+    DateTime? LastPathChangeAtUtc,
+    IReadOnlyList<HopDto> Hops);

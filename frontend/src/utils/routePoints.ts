@@ -30,11 +30,16 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): nu
  * as a separate "ISP node" point rather than merged into the verified destination. */
 const DIFFERENT_LOCATION_THRESHOLD_KM = 2
 
-export function buildRoutePoints(target: TargetSummary, hops: Hop[], office: OfficeLocation | null): RoutePoint[] {
+export function buildRoutePoints(
+  target: TargetSummary,
+  hops: Hop[],
+  origin: OfficeLocation | null,
+  originLabel = 'Oficina',
+): RoutePoint[] {
   const points: RoutePoint[] = []
 
-  if (office) {
-    points.push({ kind: 'office', lat: office.lat, lon: office.lon, label: 'Oficina', city: office.address })
+  if (origin) {
+    points.push({ kind: 'office', lat: origin.lat, lon: origin.lon, label: originLabel, city: origin.address })
   }
 
   const geoHops = hops.filter((h): h is Hop & { lat: number; lon: number } => h.lat !== null && h.lon !== null)

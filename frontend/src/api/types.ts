@@ -89,3 +89,15 @@ export type CreateAgentRequest = {
   location: string
   provider: string
 }
+
+export type AgentTraceRun = {
+  agentId: number
+  agentName: string
+  agentIsBuiltIn: boolean
+  runId: number
+  startedAtUtc: string
+  overallLossPct: number
+  overallAvgRttMs: number
+  lastPathChangeAtUtc: string | null
+  hops: Hop[]
+}

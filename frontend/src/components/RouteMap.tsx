@@ -12,5 +12,5 @@ export default function RouteMap({
   office: OfficeLocation | null
 }) {
   const points = buildRoutePoints(target, hops, office)
-  return <MultiRouteMap routes={[{ id: target.id, name: target.name, color: '#22b8cf', points }]} />
+  return <MultiRouteMap routes={[{ id: String(target.id), name: target.name, color: '#22b8cf', points }]} />
 }

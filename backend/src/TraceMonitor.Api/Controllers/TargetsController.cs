@@ -114,6 +114,47 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
         return runs;
     }
 
+    /// <summary>
+    /// Latest run per active agent for this target — used by the dashboard to show/compare every
+    /// agent's reading instead of just whichever agent happened to report most recently overall.
+    /// </summary>
+    [HttpGet("{id:int}/latest-by-agent")]
+    public async Task<ActionResult<IReadOnlyList<AgentTraceRunDto>>> GetLatestByAgent(int id, [FromServices] IGeoIpService geoIp, CancellationToken ct)
+    {
+        var target = await db.Targets.FindAsync([id], ct);
+        if (target is null)
+            return NotFound();
+
+        var agents = await db.Agents.Where(a => a.IsActive).ToListAsync(ct);
+        var result = new List<AgentTraceRunDto>();
+
+        foreach (var agent in agents)
+        {
+            var run = await db.TraceRuns
+                .Where(r => r.TargetId == id && r.AgentId == agent.Id)
+                .OrderByDescending(r => r.StartedAtUtc)
+                .Include(r => r.Hops)
+                .FirstOrDefaultAsync(ct);
+
+            if (run is null)
+                continue;
+
+            var lastEvent = await db.PathChangeEvents
+                .Where(e => e.TargetId == id && e.AgentId == agent.Id)
+                .OrderByDescending(e => e.DetectedAtUtc)
+                .FirstOrDefaultAsync(ct);
+
+            var hops = await ToHopDtosAsync(run.Hops, geoIp, ct);
+
+            result.Add(new AgentTraceRunDto(
+                agent.Id, agent.Name, agent.IsBuiltIn,
+                run.Id, run.StartedAtUtc, run.OverallLossPct, run.OverallAvgRttMs,
+                lastEvent?.DetectedAtUtc, hops));
+        }
+
+        return result;
+    }
+
     [HttpGet("{id:int}/events")]
     public async Task<ActionResult<IReadOnlyList<PathChangeEventDto>>> GetEvents(int id, [FromQuery] int limit = 100, CancellationToken ct = default)
     {
@@ -130,17 +171,22 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
 
     private async Task<TraceRunDto> ToDtoAsync(TraceRun run, IGeoIpService geoIp, CancellationToken ct)
     {
-        var ips = run.Hops.Where(h => h.Ip != null).Select(h => h.Ip!).ToList();
+        var hops = await ToHopDtosAsync(run.Hops, geoIp, ct);
+        return new TraceRunDto(run.Id, run.StartedAtUtc, run.OverallLossPct, run.OverallAvgRttMs, hops);
+    }
+
+    private static async Task<IReadOnlyList<HopDto>> ToHopDtosAsync(IEnumerable<TraceHop> hops, IGeoIpService geoIp, CancellationToken ct)
+    {
+        var ordered = hops.OrderBy(h => h.HopIndex).ToList();
+        var ips = ordered.Where(h => h.Ip != null).Select(h => h.Ip!).ToList();
         var geo = await geoIp.ResolveAsync(ips, ct);
 
-        var hops = run.Hops.OrderBy(h => h.HopIndex).Select(h =>
+        return ordered.Select(h =>
         {
             geo.TryGetValue(h.Ip ?? "", out var g);
             return new HopDto(
                 h.HopIndex, h.Ip, h.Hostname, h.LossPct, h.Sent, h.Last, h.Avg, h.Best, h.Worst, h.StDev,
                 g?.Lat, g?.Lon, g?.City, g?.Country, g?.Asn, g?.IsPrivate ?? h.Ip is null);
         }).ToList();
-
-        return new TraceRunDto(run.Id, run.StartedAtUtc, run.OverallLossPct, run.OverallAvgRttMs, hops);
     }
 }

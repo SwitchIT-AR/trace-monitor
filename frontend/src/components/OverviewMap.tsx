@@ -1,43 +1,51 @@
 import { useMemo } from 'react'
 import { Center, Group, Loader, Paper, Text } from '@mantine/core'
-import { api } from '../api/client'
-import { usePolling } from '../hooks/usePolling'
-import type { TargetSummary, TraceRun } from '../api/types'
+import type { Agent, AgentTraceRun, TargetSummary } from '../api/types'
 import { buildRoutePoints } from '../utils/routePoints'
 import MultiRouteMap, { type MapRoute } from './MultiRouteMap'
 
 const PALETTE = ['#22b8cf', '#fd7e14', '#12b886', '#e64980', '#fab005', '#7950f2']
 
-function useLatestRuns(targets: TargetSummary[]) {
-  return usePolling(async () => {
-    const entries = await Promise.all(
-      targets.map(async (t) => {
-        try {
-          return [t.id, await api.getLatestRun(t.id)] as const
-        } catch {
-          return [t.id, null] as const
-        }
-      }),
-    )
-    return Object.fromEntries(entries) as Record<number, TraceRun | null>
-  }, 30_000)
-}
-
-export default function OverviewMap({ targets }: { targets: TargetSummary[] }) {
-  const { data: runsByTarget, loading } = useLatestRuns(targets)
-  const { data: office } = usePolling(() => api.getOffice(), 300_000)
-
+export default function OverviewMap({
+  targets,
+  runsByTarget,
+  agents,
+  selectedAgentId,
+}: {
+  targets: TargetSummary[]
+  runsByTarget: Record<number, AgentTraceRun[]> | null
+  agents: Agent[]
+  selectedAgentId: number | null
+}) {
   const routes: MapRoute[] = useMemo(() => {
     if (!runsByTarget) return []
-    return targets.map((t, i) => ({
-      id: t.id,
-      name: t.name,
-      color: PALETTE[i % PALETTE.length],
-      points: buildRoutePoints(t, runsByTarget[t.id]?.hops ?? [], office ?? null),
-    }))
-  }, [targets, runsByTarget, office])
+    const agentById = new Map(agents.map((a) => [a.id, a]))
 
-  if (loading) {
+    return targets.flatMap((t, i) => {
+      const color = PALETTE[i % PALETTE.length]
+      const readings = (runsByTarget[t.id] ?? []).filter(
+        (r) => selectedAgentId === null || r.agentId === selectedAgentId,
+      )
+
+      return readings.map((r) => {
+        const agent = agentById.get(r.agentId)
+        const origin =
+          agent?.lat != null && agent?.lon != null
+            ? { lat: agent.lat, lon: agent.lon, address: agent.address ?? agent.location }
+            : null
+
+        return {
+          id: `${t.id}-${r.agentId}`,
+          name: readings.length > 1 ? `${t.name} (${r.agentName})` : t.name,
+          color,
+          dashed: !r.agentIsBuiltIn,
+          points: buildRoutePoints(t, r.hops, origin, r.agentName),
+        }
+      })
+    })
+  }, [targets, runsByTarget, agents, selectedAgentId])
+
+  if (!runsByTarget) {
     return (
       <Center h="100%">
         <Loader />
