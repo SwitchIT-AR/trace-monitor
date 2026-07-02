@@ -29,17 +29,14 @@ jobs:
 
   deploy:
     needs: build-check
-    runs-on: ubuntu-latest
+    # Runs on the runner installed directly on the Proxmox CT (10.0.93.113) — the CT polls
+    # GitHub for jobs, so no inbound SSH from the internet to the private LAN is needed.
+    runs-on: [self-hosted, trace-monitor]
     steps:
-      - name: Deploy to Proxmox CT via SSH
-        uses: appleboy/ssh-action@v1.2.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            set -e
-            cd /opt/trace-monitor
-            git fetch --all
-            git reset --hard origin/main
-            docker compose up -d --build
+      - name: Pull and redeploy
+        run: |
+          set -e
+          cd /opt/trace-monitor
+          git fetch --all
+          git reset --hard origin/main
+          docker compose up -d --build

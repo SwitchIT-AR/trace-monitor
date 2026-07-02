@@ -69,27 +69,36 @@ con `VITE_API_PROXY_TARGET`).
 
 ## Deploy automático (GitHub Actions)
 
-Cada push a `main` corre `.github/workflows/deploy.yml`: build de sanity
-(dotnet + npm) y después un deploy por SSH al CT que hace
-`git reset --hard origin/main && docker compose up -d --build` en
-`/opt/trace-monitor`.
+El CT está en la LAN de la oficina (`10.0.93.113`), sin IP pública — un
+runner de GitHub Actions hosteado por GitHub no puede entrar por SSH desde
+afuera. Por eso el deploy corre con un **runner self-hosted instalado en el
+mismo CT**: el runner es el que llama hacia afuera a GitHub a buscar trabajo,
+no al revés, así que no hace falta abrir nada entrante.
 
-Requiere estos secrets en el repo (Settings → Secrets and variables →
-Actions):
+Cada push a `main` corre `.github/workflows/deploy.yml`:
+1. `build-check` (dotnet + npm) en un runner de GitHub normal, como gate de
+   sanidad.
+2. `deploy`, en el runner self-hosted (`runs-on: [self-hosted, trace-monitor]`),
+   hace `git reset --hard origin/main && docker compose up -d --build`
+   directo en `/opt/trace-monitor`.
 
-- `DEPLOY_HOST` — IP del CT.
-- `DEPLOY_USER` — usuario SSH (ej. `root`).
-- `DEPLOY_SSH_KEY` — clave privada SSH dedicada al deploy.
-
-Se recomienda generar un par de llaves solo para esto en vez de usar una
-contraseña:
+Setup del runner en el CT (una sola vez):
 
 ```bash
-ssh-keygen -t ed25519 -f deploy_key -N ""
-ssh-copy-id -i deploy_key.pub usuario@<CT_IP>
+useradd -m -s /bin/bash ghrunner
+usermod -aG docker ghrunner
+mkdir -p /opt/actions-runner && chown ghrunner:ghrunner /opt/actions-runner
+su - ghrunner -c '
+  cd /opt/actions-runner
+  curl -o runner.tar.gz -L https://github.com/actions/runner/releases/latest/download/actions-runner-linux-x64-<version>.tar.gz
+  tar xzf runner.tar.gz
+  ./config.sh --url https://github.com/SwitchIT-AR/trace-monitor --token <token-de-Settings-Actions-Runners> --labels self-hosted,linux,x64,trace-monitor
+'
+cd /opt/actions-runner && ./svc.sh install ghrunner && ./svc.sh start
 ```
 
-Cargar `deploy_key` (privada) como el secret `DEPLOY_SSH_KEY`.
+El token de registro sale de Settings → Actions → Runners → New self-hosted
+runner (o `gh api -X POST repos/OWNER/REPO/actions/runners/registration-token`).
 
 En el CT, antes del primer deploy:
 
