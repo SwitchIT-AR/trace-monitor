@@ -3,6 +3,7 @@ using Anthropic;
 using Anthropic.Models.Messages;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using TraceMonitor.Core.Models;
 using TraceMonitor.Core.Services;
 using TraceMonitor.Infrastructure.Data;
 
@@ -14,7 +15,7 @@ namespace TraceMonitor.Infrastructure.Services;
 /// a senior network/security engineer. Keeping the bundle aggregated is what keeps a fleet-wide
 /// analysis in the low thousands of input tokens instead of the ~1-2M tokens/day a raw dump would cost.
 /// </summary>
-public class AiAnalysisService(TraceMonitorDbContext db, IConfiguration config) : IAiAnalysisService
+public class AiAnalysisService(TraceMonitorDbContext db, IConfiguration config, ISettingsService settings) : IAiAnalysisService
 {
     private const double HopLossFlagThresholdPct = 5.0;
 
@@ -30,11 +31,20 @@ public class AiAnalysisService(TraceMonitorDbContext db, IConfiguration config) 
 
     public async Task<AiAnalysisResult> AnalyzeAsync(CancellationToken ct)
     {
-        var apiKey = config["Anthropic:ApiKey"];
+        var apiKey = await settings.GetAsync("Anthropic:ApiKey", ct);
         if (string.IsNullOrWhiteSpace(apiKey))
-            throw new InvalidOperationException("Anthropic:ApiKey no esta configurada");
+        {
+            // One-time fallback: migrate whatever was in the old .env/appsettings config into the
+            // DB, so upgrading doesn't silently lose a key already configured before Settings existed.
+            apiKey = config["Anthropic:ApiKey"];
+            if (!string.IsNullOrWhiteSpace(apiKey))
+                await settings.SetAsync("Anthropic:ApiKey", apiKey, ct);
+        }
 
-        var model = config["Anthropic:Model"] ?? "claude-opus-4-8";
+        if (string.IsNullOrWhiteSpace(apiKey))
+            throw new InvalidOperationException("Anthropic:ApiKey no esta configurada (ver pestaña Settings)");
+
+        var model = await settings.GetAsync("Anthropic:Model", ct) ?? config["Anthropic:Model"] ?? "claude-opus-4-8";
 
         var targetNames = await db.Targets.ToDictionaryAsync(t => t.Id, t => t.Name, ct);
         var agentNames = await db.Agents.ToDictionaryAsync(a => a.Id, a => a.Name, ct);
@@ -79,7 +89,11 @@ public class AiAnalysisService(TraceMonitorDbContext db, IConfiguration config) 
                 .Select(c => c.TryPickText(out var t) ? t.Text : null)
                 .Where(t => !string.IsNullOrEmpty(t)));
 
-        return new AiAnalysisResult(text, DateTime.UtcNow, model);
+        var report = new AiAnalysisReport { AnalysisText = text, GeneratedAtUtc = DateTime.UtcNow, ModelUsed = model };
+        db.AiAnalysisReports.Add(report);
+        await db.SaveChangesAsync(ct);
+
+        return new AiAnalysisResult(report.Id, report.AnalysisText, report.GeneratedAtUtc, report.ModelUsed);
     }
 
     private async Task<List<string>> BuildLossSummaryAsync(

@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using TraceMonitor.Infrastructure.Data;
@@ -11,9 +12,11 @@ using TraceMonitor.Infrastructure.Data;
 namespace TraceMonitor.Infrastructure.Migrations
 {
     [DbContext(typeof(TraceMonitorDbContext))]
-    partial class TraceMonitorDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260702235509_AddAiAnalysisReports")]
+    partial class AddAiAnalysisReports
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -116,32 +119,6 @@ namespace TraceMonitor.Infrastructure.Migrations
                     b.HasIndex("GeneratedAtUtc");
 
                     b.ToTable("AiAnalysisReports");
-                });
-
-            modelBuilder.Entity("TraceMonitor.Core.Models.AppSetting", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Key")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("UpdatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Value")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Key")
-                        .IsUnique();
-
-                    b.ToTable("AppSettings");
                 });
 
             modelBuilder.Entity("TraceMonitor.Core.Models.IpGeoCache", b =>
@@ -444,68 +421,6 @@ namespace TraceMonitor.Infrastructure.Migrations
                     b.ToTable("TraceRuns");
                 });
 
-            modelBuilder.Entity("TraceMonitor.Core.Models.User", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("CreatedAtUtc")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsAdmin")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("PasswordHash")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Username")
-                        .IsUnique();
-
-                    b.ToTable("Users");
-                });
-
-            modelBuilder.Entity("TraceMonitor.Core.Models.UserTargetAgentAccess", b =>
-                {
-                    b.Property<long>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bigint");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
-
-                    b.Property<int>("AgentId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("TargetId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AgentId");
-
-                    b.HasIndex("TargetId");
-
-                    b.HasIndex("UserId", "TargetId", "AgentId")
-                        .IsUnique();
-
-                    b.ToTable("UserTargetAgentAccess");
-                });
-
             modelBuilder.Entity("TraceMonitor.Core.Models.PathChangeEvent", b =>
                 {
                     b.HasOne("TraceMonitor.Core.Models.Agent", "Agent")
@@ -572,33 +487,6 @@ namespace TraceMonitor.Infrastructure.Migrations
                     b.Navigation("Agent");
 
                     b.Navigation("Target");
-                });
-
-            modelBuilder.Entity("TraceMonitor.Core.Models.UserTargetAgentAccess", b =>
-                {
-                    b.HasOne("TraceMonitor.Core.Models.Agent", "Agent")
-                        .WithMany()
-                        .HasForeignKey("AgentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TraceMonitor.Core.Models.Target", "Target")
-                        .WithMany()
-                        .HasForeignKey("TargetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("TraceMonitor.Core.Models.User", "User")
-                        .WithMany()
-                        .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Agent");
-
-                    b.Navigation("Target");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("TraceMonitor.Core.Models.Agent", b =>

@@ -1,20 +1,30 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TraceMonitor.Api.Contracts;
 using TraceMonitor.Core.Models;
 using TraceMonitor.Core.Security;
+using TraceMonitor.Core.Services;
 using TraceMonitor.Infrastructure.Data;
 
 namespace TraceMonitor.Api.Controllers;
 
 [ApiController]
 [Route("api/agents")]
-public class AgentsController(TraceMonitorDbContext db) : ControllerBase
+[Authorize]
+public class AgentsController(TraceMonitorDbContext db, IUserAccessScope scope) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<AgentSummaryDto>>> GetAll(CancellationToken ct)
     {
         var agents = await db.Agents.OrderBy(a => a.Name).ToListAsync(ct);
+
+        if (!scope.IsAdmin)
+        {
+            var allowedAgentIds = (await scope.GetAllowedAgentIdsAsync(ct)).ToHashSet();
+            agents = agents.Where(a => allowedAgentIds.Contains(a.Id)).ToList();
+        }
+
         return agents.Select(ToSummaryDto).ToList();
     }
 

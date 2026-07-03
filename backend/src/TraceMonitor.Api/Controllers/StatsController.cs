@@ -1,13 +1,16 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TraceMonitor.Api.Contracts;
+using TraceMonitor.Core.Services;
 using TraceMonitor.Infrastructure.Data;
 
 namespace TraceMonitor.Api.Controllers;
 
 [ApiController]
 [Route("api/stats")]
-public class StatsController(TraceMonitorDbContext db) : ControllerBase
+[Authorize]
+public class StatsController(TraceMonitorDbContext db, IUserAccessScope scope) : ControllerBase
 {
     /// <summary>Average loss per (target, agent) pair over the trailing window, worst first —
     /// the "which route is having problems" summary for the dashboard.</summary>
@@ -37,8 +40,15 @@ public class StatsController(TraceMonitorDbContext db) : ControllerBase
         var targetNames = await db.Targets.ToDictionaryAsync(t => t.Id, t => t.Name, ct);
         var agentNames = await db.Agents.ToDictionaryAsync(a => a.Id, a => a.Name, ct);
 
-        return grouped
-            .Where(g => targetNames.ContainsKey(g.TargetId) && agentNames.ContainsKey(g.AgentId))
+        var filtered = grouped.Where(g => targetNames.ContainsKey(g.TargetId) && agentNames.ContainsKey(g.AgentId));
+
+        if (!scope.IsAdmin)
+        {
+            var allowedPairs = (await scope.GetAllowedPairsAsync(ct)).ToHashSet();
+            filtered = filtered.Where(g => allowedPairs.Contains((g.TargetId, g.AgentId)));
+        }
+
+        return filtered
             .Select(g => new LossSummaryDto(
                 g.TargetId, targetNames[g.TargetId],
                 g.AgentId, agentNames[g.AgentId],

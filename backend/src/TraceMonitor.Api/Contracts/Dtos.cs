@@ -139,4 +139,22 @@ public record RouteTimelineDto(
     int FlapCount,
     IReadOnlyList<RouteSegmentDto> Segments);
 
-public record AiAnalysisResultDto(string AnalysisText, DateTime GeneratedAtUtc, string ModelUsed);
+public record AiAnalysisResultDto(long Id, string AnalysisText, DateTime GeneratedAtUtc, string ModelUsed);
+
+public record AiAnalysisReportSummaryDto(long Id, DateTime GeneratedAtUtc, string ModelUsed);
+
+public record LoginRequest(string Username, string Password);
+
+public record MeDto(int Id, string Username, bool IsAdmin);
+
+public record MaskedKeyDto(string? Masked);
+
+public record SetKeyRequest(string Value);
+
+public record UserSummaryDto(int Id, string Username, bool IsActive, bool IsAdmin, DateTime CreatedAtUtc);
+
+public record CreateUserRequest(string Username, string Password, bool IsAdmin);
+
+public record ResetPasswordRequest(string NewPassword);
+
+public record AccessPairDto(int TargetId, int AgentId);

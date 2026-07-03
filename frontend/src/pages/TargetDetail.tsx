@@ -24,8 +24,10 @@ export default function TargetDetail() {
   const { data: history } = usePolling(() => api.getRunHistory(targetId, RANGE_HOURS[range]), 30_000, [targetId, range])
   const { data: agentRuns } = usePolling(() => api.getLatestRunsByAgent(targetId), 30_000, [targetId])
   const { data: office } = usePolling(() => api.getOffice(), 300_000)
+  const { data: agents } = usePolling(() => api.getAgents(), 30_000)
 
   const effectiveAgentId = selectedAgentId ?? agentRuns?.[0]?.agentId ?? null
+  const effectiveAgent = agents?.find((a) => a.id === effectiveAgentId)
 
   const target = targets?.find((t) => t.id === targetId)
   const currentIndex = targets?.findIndex((t) => t.id === targetId) ?? -1
@@ -55,11 +57,18 @@ export default function TargetDetail() {
           <ActionIcon variant="subtle" onClick={() => navigate(-1)} aria-label="Volver">
             <IconArrowLeft size={18} />
           </ActionIcon>
-          <div>
-            <Title order={3}>{target?.name ?? `Target #${targetId}`}</Title>
-            <Text c="dimmed" size="sm">
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <Title order={3} lineClamp={1}>
+              {target?.name ?? `Target #${targetId}`}
+            </Title>
+            <Text c="dimmed" size="sm" truncate="end">
               {target?.provider} &middot; {target?.destinationHost}
             </Text>
+            {effectiveAgent && (
+              <Text c="dimmed" size="xs" truncate="end">
+                {effectiveAgent.location} → {target?.name}
+              </Text>
+            )}
           </div>
         </Group>
         <Group gap="xs" wrap="nowrap">
@@ -112,7 +121,7 @@ export default function TargetDetail() {
             <Select
               value={String(effectiveAgentId)}
               onChange={(v) => v && setSelectedAgentId(Number(v))}
-              w={200}
+              w={{ base: '100%', xs: 200 }}
               data={agentRuns.map((a) => ({ value: String(a.agentId), label: a.agentName }))}
             />
           )}

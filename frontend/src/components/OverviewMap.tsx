@@ -66,9 +66,9 @@ export default function OverviewMap({
 
   return (
     <Paper withBorder p="md" h="100%" style={{ display: 'flex', flexDirection: 'column' }}>
-      <Group justify="space-between" mb="sm">
+      <Group justify="space-between" mb="sm" wrap="wrap">
         <Text fw={600}>Mapa de rutas</Text>
-        <Group gap="lg">
+        <Group gap="lg" wrap="wrap">
           {legendEntries.map((e) => (
             <Group key={e.name} gap={6}>
               <div style={{ width: 10, height: 10, borderRadius: '50%', background: e.color }} />

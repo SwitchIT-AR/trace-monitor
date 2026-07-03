@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TraceMonitor.Api.Contracts;
@@ -9,12 +10,20 @@ namespace TraceMonitor.Api.Controllers;
 
 [ApiController]
 [Route("api/targets")]
-public class TargetsController(TraceMonitorDbContext db) : ControllerBase
+[Authorize]
+public class TargetsController(TraceMonitorDbContext db, IUserAccessScope scope) : ControllerBase
 {
     [HttpGet]
     public async Task<ActionResult<IReadOnlyList<TargetSummaryDto>>> GetAll(CancellationToken ct)
     {
-        var targets = await db.Targets.Where(t => t.IsActive).OrderBy(t => t.Name).ToListAsync(ct);
+        var query = db.Targets.Where(t => t.IsActive);
+        if (!scope.IsAdmin)
+        {
+            var allowedTargetIds = await scope.GetAllowedTargetIdsAsync(ct);
+            query = query.Where(t => allowedTargetIds.Contains(t.Id));
+        }
+
+        var targets = await query.OrderBy(t => t.Name).ToListAsync(ct);
         var result = new List<TargetSummaryDto>(targets.Count);
 
         foreach (var target in targets)
@@ -81,8 +90,14 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
     [HttpGet("{id:int}/latest")]
     public async Task<ActionResult<TraceRunDto>> GetLatest(int id, [FromServices] IGeoIpService geoIp, CancellationToken ct)
     {
-        var run = await db.TraceRuns
-            .Where(r => r.TargetId == id)
+        var runQuery = db.TraceRuns.Where(r => r.TargetId == id);
+        if (!scope.IsAdmin)
+        {
+            var allowedAgentIds = await GetAllowedAgentIdsForTargetAsync(id, ct);
+            runQuery = runQuery.Where(r => allowedAgentIds.Contains(r.AgentId));
+        }
+
+        var run = await runQuery
             .OrderByDescending(r => r.StartedAtUtc)
             .Include(r => r.Hops)
             .FirstOrDefaultAsync(ct);
@@ -98,6 +113,11 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
         int id, [FromQuery] DateTime? from, [FromQuery] DateTime? to, [FromQuery] int limit = 500, CancellationToken ct = default)
     {
         var query = db.TraceRuns.Where(r => r.TargetId == id);
+        if (!scope.IsAdmin)
+        {
+            var allowedAgentIds = await GetAllowedAgentIdsForTargetAsync(id, ct);
+            query = query.Where(r => allowedAgentIds.Contains(r.AgentId));
+        }
 
         if (from is not null)
             query = query.Where(r => r.StartedAtUtc >= from);
@@ -130,6 +150,9 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
 
         foreach (var agent in agents)
         {
+            if (!await scope.CanAccessAsync(id, agent.Id, ct))
+                continue;
+
             var run = await db.TraceRuns
                 .Where(r => r.TargetId == id && r.AgentId == agent.Id)
                 .OrderByDescending(r => r.StartedAtUtc)
@@ -165,6 +188,9 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<HopLossDto>>> GetHopLoss(
         int id, [FromQuery] int agentId, [FromQuery] int hours = 24, CancellationToken ct = default)
     {
+        if (!await scope.CanAccessAsync(id, agentId, ct))
+            return Forbid();
+
         var since = DateTime.UtcNow.AddHours(-hours);
 
         var runIds = db.TraceRuns
@@ -210,6 +236,9 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
     public async Task<ActionResult<RouteTimelineDto>> GetRouteTimeline(
         int id, [FromQuery] int agentId, [FromQuery] int hours = 168, CancellationToken ct = default)
     {
+        if (!await scope.CanAccessAsync(id, agentId, ct))
+            return Forbid();
+
         var since = DateTime.UtcNow.AddHours(-hours);
 
         var runs = await db.TraceRuns
@@ -286,14 +315,23 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
         if (run is null)
             return NotFound();
 
+        if (!await scope.CanAccessAsync(run.TargetId, run.AgentId, ct))
+            return Forbid();
+
         return await ToDtoAsync(run, geoIp, ct);
     }
 
     [HttpGet("{id:int}/events")]
     public async Task<ActionResult<IReadOnlyList<PathChangeEventDto>>> GetEvents(int id, [FromQuery] int limit = 100, CancellationToken ct = default)
     {
-        var events = await db.PathChangeEvents
-            .Where(e => e.TargetId == id)
+        var eventsQuery = db.PathChangeEvents.Where(e => e.TargetId == id);
+        if (!scope.IsAdmin)
+        {
+            var allowedAgentIds = await GetAllowedAgentIdsForTargetAsync(id, ct);
+            eventsQuery = eventsQuery.Where(e => allowedAgentIds.Contains(e.AgentId));
+        }
+
+        var events = await eventsQuery
             .OrderByDescending(e => e.DetectedAtUtc)
             .Take(limit)
             .Include(e => e.Target)
@@ -302,6 +340,9 @@ public class TargetsController(TraceMonitorDbContext db) : ControllerBase
         return events.Select(e => new PathChangeEventDto(
             e.Id, e.TargetId, e.Target?.Name ?? "", e.DetectedAtUtc, e.PreviousHopsJson, e.NewHopsJson)).ToList();
     }
+
+    private async Task<IReadOnlyList<int>> GetAllowedAgentIdsForTargetAsync(int targetId, CancellationToken ct) =>
+        (await scope.GetAllowedPairsAsync(ct)).Where(p => p.TargetId == targetId).Select(p => p.AgentId).ToList();
 
     private async Task<TraceRunDto> ToDtoAsync(TraceRun run, IGeoIpService geoIp, CancellationToken ct)
     {

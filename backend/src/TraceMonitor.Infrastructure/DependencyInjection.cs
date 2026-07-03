@@ -27,6 +27,8 @@ public static class DependencyInjection
         services.AddScoped<ITraceIngestionService, TraceIngestionService>();
         services.AddScoped<IAgentAuthenticator, AgentAuthenticator>();
         services.AddScoped<IAiAnalysisService, AiAnalysisService>();
+        services.AddScoped<ISettingsService, SettingsService>();
+        services.AddScoped<IUserAccessScope, UserAccessScope>();
         services.AddHostedService<TraceSchedulerWorker>();
 
         return services;

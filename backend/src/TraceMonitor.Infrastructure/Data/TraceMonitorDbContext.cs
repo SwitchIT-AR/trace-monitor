@@ -12,6 +12,10 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
     public DbSet<PathChangeEvent> PathChangeEvents => Set<PathChangeEvent>();
     public DbSet<IpGeoCache> IpGeoCache => Set<IpGeoCache>();
     public DbSet<RouteLabel> RouteLabels => Set<RouteLabel>();
+    public DbSet<AiAnalysisReport> AiAnalysisReports => Set<AiAnalysisReport>();
+    public DbSet<User> Users => Set<User>();
+    public DbSet<AppSetting> AppSettings => Set<AppSetting>();
+    public DbSet<UserTargetAgentAccess> UserTargetAgentAccess => Set<UserTargetAgentAccess>();
 
     /// <summary>Id of the seeded built-in agent that represents the office origin, fed in-process by TraceSchedulerWorker.</summary>
     public const int BuiltInAgentId = 1;
@@ -59,6 +63,29 @@ public class TraceMonitorDbContext(DbContextOptions<TraceMonitorDbContext> optio
             e.HasIndex(r => new { r.TargetId, r.AgentId, r.RouteSignatureHash }).IsUnique();
             e.HasOne(r => r.Target).WithMany().HasForeignKey(r => r.TargetId);
             e.HasOne(r => r.Agent).WithMany().HasForeignKey(r => r.AgentId);
+        });
+
+        modelBuilder.Entity<AiAnalysisReport>(e =>
+        {
+            e.HasIndex(r => r.GeneratedAtUtc);
+        });
+
+        modelBuilder.Entity<User>(e =>
+        {
+            e.HasIndex(u => u.Username).IsUnique();
+        });
+
+        modelBuilder.Entity<AppSetting>(e =>
+        {
+            e.HasIndex(s => s.Key).IsUnique();
+        });
+
+        modelBuilder.Entity<UserTargetAgentAccess>(e =>
+        {
+            e.HasIndex(a => new { a.UserId, a.TargetId, a.AgentId }).IsUnique();
+            e.HasOne(a => a.User).WithMany().HasForeignKey(a => a.UserId);
+            e.HasOne(a => a.Target).WithMany().HasForeignKey(a => a.TargetId);
+            e.HasOne(a => a.Agent).WithMany().HasForeignKey(a => a.AgentId);
         });
 
         // Lat/Lon/Address are intentionally left null here — Program.cs fills them in at startup

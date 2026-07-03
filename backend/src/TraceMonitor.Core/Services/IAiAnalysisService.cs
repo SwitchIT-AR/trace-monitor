@@ -1,6 +1,6 @@
 namespace TraceMonitor.Core.Services;
 
-public record AiAnalysisResult(string AnalysisText, DateTime GeneratedAtUtc, string ModelUsed);
+public record AiAnalysisResult(long Id, string AnalysisText, DateTime GeneratedAtUtc, string ModelUsed);
 
 public interface IAiAnalysisService
 {

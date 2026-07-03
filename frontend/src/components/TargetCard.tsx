@@ -12,13 +12,13 @@ function isRecentChange(iso: string | null): boolean {
 
 function AgentReading({
   reading,
-  agentProvider,
-  targetProvider,
+  agentLocation,
+  targetName,
   showAgentName,
 }: {
   reading: AgentTraceRun
-  agentProvider: string
-  targetProvider: string
+  agentLocation: string
+  targetName: string
   showAgentName: boolean
 }) {
   const changedRecently = isRecentChange(reading.lastPathChangeAtUtc)
@@ -27,9 +27,9 @@ function AgentReading({
     <Stack gap={4}>
       <Text size="xs" fw={600} c="dimmed" truncate="end">
         {showAgentName ? `${reading.agentName}: ` : ''}
-        {agentProvider} → {targetProvider}
+        {agentLocation} → {targetName}
       </Text>
-      <Group gap="xl">
+      <Group gap="xl" wrap="wrap">
         <div>
           <Text size="xs" c="dimmed">
             Loss
@@ -45,7 +45,7 @@ function AgentReading({
           <Text fw={700}>{reading.overallAvgRttMs.toFixed(1)} ms</Text>
         </div>
       </Group>
-      <Group justify="space-between">
+      <Group justify="space-between" wrap="wrap">
         <Text size="xs" c="dimmed">
           ultima traza {formatRelativeTime(reading.startedAtUtc)}
         </Text>
@@ -76,7 +76,7 @@ export default function TargetCard({
   const agentById = new Map(agents.map((a) => [a.id, a]))
 
   return (
-    <Card withBorder shadow="sm" padding="lg" style={{ cursor: 'pointer' }} onClick={() => navigate(`/targets/${target.id}`)}>
+    <Card withBorder shadow="sm" padding="lg" style={{ cursor: 'pointer', flexShrink: 0 }} onClick={() => navigate(`/targets/${target.id}`)}>
       <Stack gap="xs">
         <Group justify="space-between" wrap="nowrap" gap="xs">
           <Tooltip label={target.name} openDelay={400} disabled={target.name.length < 24}>
@@ -104,8 +104,8 @@ export default function TargetCard({
               {i > 0 && <Divider my={6} />}
               <AgentReading
                 reading={r}
-                agentProvider={agentById.get(r.agentId)?.provider ?? '?'}
-                targetProvider={target.provider}
+                agentLocation={agentById.get(r.agentId)?.location ?? '?'}
+                targetName={target.name}
                 showAgentName={readings.length > 1}
               />
             </div>

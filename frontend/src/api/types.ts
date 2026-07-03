@@ -147,7 +147,43 @@ export type RouteTimelineData = {
 }
 
 export type AiAnalysisResult = {
+  id: number
   analysisText: string
   generatedAtUtc: string
   modelUsed: string
+}
+
+export type AiAnalysisReportSummary = {
+  id: number
+  generatedAtUtc: string
+  modelUsed: string
+}
+
+export type MeDto = {
+  id: number
+  username: string
+  isAdmin: boolean
+}
+
+export type MaskedKey = {
+  masked: string | null
+}
+
+export type UserSummary = {
+  id: number
+  username: string
+  isActive: boolean
+  isAdmin: boolean
+  createdAtUtc: string
+}
+
+export type CreateUserRequest = {
+  username: string
+  password: string
+  isAdmin: boolean
+}
+
+export type AccessPair = {
+  targetId: number
+  agentId: number
 }

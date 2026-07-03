@@ -60,13 +60,13 @@ export default function PathTimeline({ events, showTarget = false }: { events: P
             </Group>
           }>
             <Grid mt="xs">
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="xs" c="dimmed" mb={4}>
                   Antes
                 </Text>
                 <HopList hops={previous} changedIndexes={changed} />
               </Grid.Col>
-              <Grid.Col span={6}>
+              <Grid.Col span={{ base: 12, sm: 6 }}>
                 <Text size="xs" c="dimmed" mb={4}>
                   Ahora
                 </Text>

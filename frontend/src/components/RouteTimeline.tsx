@@ -74,7 +74,7 @@ export default function RouteTimeline({
             {timeline.distinctRouteCount === 1 ? '' : 's'} &mdash; {timeline.flapCount} cambio
             {timeline.flapCount === 1 ? '' : 's'} en el rango
           </Text>
-          <Select value={hours} onChange={(v) => v && setHours(v)} w={160} data={RANGE_OPTIONS} />
+          <Select value={hours} onChange={(v) => v && setHours(v)} w={{ base: '100%', xs: 160 }} data={RANGE_OPTIONS} />
         </Group>
         <Timeline bulletSize={20} lineWidth={2}>
           {timeline.segments.map((s, i) => (
@@ -82,7 +82,7 @@ export default function RouteTimeline({
               key={`${s.representativeRunId}-${i}`}
               bullet={<IconArrowDown size={12} />}
               title={
-                <Group gap="xs" style={{ cursor: 'pointer' }} onClick={() => openSegment(s.representativeRunId)}>
+                <Group gap="xs" wrap="wrap" style={{ cursor: 'pointer' }} onClick={() => openSegment(s.representativeRunId)}>
                   <Text fw={600} size="sm">
                     {s.label}
                   </Text>

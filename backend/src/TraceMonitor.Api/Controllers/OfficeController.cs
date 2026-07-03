@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TraceMonitor.Api.Contracts;
 
@@ -5,6 +6,7 @@ namespace TraceMonitor.Api.Controllers;
 
 [ApiController]
 [Route("api/office")]
+[Authorize]
 public class OfficeController(IConfiguration config) : ControllerBase
 {
     [HttpGet]
